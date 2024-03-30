@@ -19,7 +19,8 @@ static struct gimbal_fdb_msg gim_fdb;
 static struct trans_fdb_msg trans_fdb;
 /*------------------------------传输数据相关 --------------------------------- */
 #define RECV_BUFFER_SIZE 64  // 接收环形缓冲区大小
-rt_uint8_t r_buffer[RECV_BUFFER_SIZE];  // 接收环形缓冲区
+rt_uint8_t *r_buffer_point; //用于清除环形缓冲区buffer的指针
+static rt_uint8_t r_buffer[RECV_BUFFER_SIZE];  // 接收环形缓冲区
 struct rt_ringbuffer receive_buffer ; // 环形缓冲区对象控制块指针
 rt_uint8_t buf[31] = {0};
 RpyTypeDef rpy_tx_data={
@@ -42,6 +43,8 @@ static void trans_pub_push(void);
 static void trans_sub_init(void);
 static void trans_pub_init(void);
 
+/*------------------------------自瞄相对角传参反馈--------------------------------------*/
+extern auto_relative_angle_status_e auto_relative_angle_status;
 /**
  * @brief trans 线程中所有订阅者初始化（如有其它数据需求可在其中添加）
  */
@@ -100,6 +103,8 @@ void transmission_task_entry(void* argument)
     /* 设置接收回调函数 */
     rt_device_set_rx_indicate(vs_port, usb_input);
     LOG_I("Transmission Task Start");
+    /*清除buffer的指针赋地址*/
+    r_buffer_point=r_buffer;
     while (1)
     {
         trans_start = dwt_get_time_ms();
@@ -110,6 +115,11 @@ void transmission_task_entry(void* argument)
 /*--------------------------------------------------具体需要发送的数据--------------------------------- */
         Send_to_pc(rpy_tx_data);
         //Getdata();
+//        if (gim_cmd.ctrl_mode==GIMBAL_RELAX||gim_cmd.ctrl_mode==GIMBAL_GYRO)
+//        {
+//           trans_fdb.yaw=0;
+//           trans_fdb.pitch=0;
+//        }
 /*--------------------------------------------------具体需要发送的数据---------------------------------*/
         /* 用于调试监测线程调度使用 */
         trans_dt = dwt_get_time_ms() - trans_start;
@@ -122,10 +132,14 @@ void transmission_task_entry(void* argument)
 void Send_to_pc(RpyTypeDef data_r)
 {
     /*填充数据*/
-    pack_Rpy(&data_r, (gim_fdb.yaw_offset_angle - ins_data.yaw), ins_data.pitch, ins_data.roll);
+    pack_Rpy(&data_r, -(gim_fdb.yaw_offset_angle - ins_data.yaw), ins_data.pitch, ins_data.roll);
     Check_Rpy(&data_r);
 
     rt_device_write(vs_port, 0, (uint8_t*)&data_r, sizeof(data_r));
+    if (gim_cmd.ctrl_mode==GIMBAL_AUTO&&auto_relative_angle_status==RELATIVE_ANGLE_TRANS)
+    {
+       auto_relative_angle_status=RELATIVE_ANGLE_OK;
+    }
 }
 
 void pack_Rpy(RpyTypeDef *frame, float yaw, float pitch,float roll)
@@ -197,12 +211,12 @@ static rt_err_t usb_input(rt_device_t dev, rt_size_t size)
         switch (rpy_rx_data.ID) {
             case GIMBAL:{
                 if (rpy_rx_data.DATA[0]) {//相对角度控制
-                    trans_fdb.yaw = - (*(int32_t *) &rpy_rx_data.DATA[1] / 1000.0);
-                    trans_fdb.pitch = (*(int32_t *) &rpy_rx_data.DATA[5] / 1000.0);
+                    trans_fdb.yaw =  (*(int32_t *) &rpy_rx_data.DATA[1] / 1000.0);
+                    trans_fdb.pitch =-(*(int32_t *) &rpy_rx_data.DATA[5] / 1000.0);
                 }
                 else{//绝对角度控制
-                    trans_fdb.yaw = - (*(int32_t *) &rpy_rx_data.DATA[1] / 1000.0);
-                    trans_fdb.pitch = (*(int32_t *) &rpy_rx_data.DATA[5] / 1000.0);
+                    trans_fdb.yaw =  (*(int32_t *) &rpy_rx_data.DATA[1] / 1000.0);
+                    trans_fdb.pitch = -(*(int32_t *) &rpy_rx_data.DATA[5] / 1000.0);
                 }
             }break;
         }
