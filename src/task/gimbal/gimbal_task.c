@@ -74,6 +74,8 @@ static rt_int16_t motor_control_pitch(dji_motor_measure_t measure);
 static rt_int16_t get_relative_pos(rt_int16_t raw_ecd, rt_int16_t center_offset);
 
 static int auto_staus=1;
+/*自瞄相对角传参反馈*/
+auto_relative_angle_status_e auto_relative_angle_status=RELATIVE_ANGLE_TRANS;
 /* --------------------------------- 云台线程入口 --------------------------------- */
 static float gim_dt;
 
@@ -142,8 +144,13 @@ void gimbal_thread_entry(void *argument)
             gim_motor_ref[PITCH] = gim_cmd.pitch;
             // 底盘相对于云台归中值的角度，取负
             gim_fdb.yaw_relative_angle = -yaw_motor_relive;
-            auto_staus=1;
 
+            gim_fdb.yaw_offset_angle=ins_data.yaw;
+                if (auto_staus==0)
+                {
+                    auto_staus=1;
+                    auto_relative_angle_status=RELATIVE_ANGLE_TRANS;
+                }
             break;
 
         // TODO: add auto mode
@@ -151,8 +158,9 @@ void gimbal_thread_entry(void *argument)
                 /*gim_motor_ref[YAW] = gim_cmd.yaw_auto;*/
                 if(auto_staus==1)
                 {
-                    gim_fdb.yaw_offset_angle=ins_data.yaw;
+                    //gim_fdb.yaw_offset_angle=ins_data.yaw;
                     auto_staus=0;
+                    auto_relative_angle_status=RELATIVE_ANGLE_TRANS;
                 }
                 gim_motor_ref[YAW] =gim_cmd.yaw;
                 gim_motor_ref[PITCH] =gim_cmd.pitch;

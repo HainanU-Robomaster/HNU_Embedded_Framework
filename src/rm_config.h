@@ -111,7 +111,7 @@
 #define PITCH_MOTOR_ID   0x208
 
 #define CENTER_ECD_YAW   3818         //云台yaw轴编码器归中值
-#define CENTER_ECD_PITCH 7827         //云台pitch轴编码器归中值
+#define CENTER_ECD_PITCH 5515         //云台pitch轴编码器归中值
 
 /* pitch轴最大仰角 */
 #define PIT_ANGLE_MAX        31.0f
@@ -195,18 +195,18 @@
 // TODO: 速度期望应改为变量应对速度切换。初次参数调整已完成
 /* 右摩擦轮M3508电机PID参数 */
 /* 速度环 */
-#define RIGHT_KP_V             18
-#define RIGHT_KI_V             2
-#define RIGHT_KD_V             0.02f
-#define RIGHT_INTEGRAL_V       2000
+#define RIGHT_KP_V             23
+#define RIGHT_KI_V             4
+#define RIGHT_KD_V             0.001f
+#define RIGHT_INTEGRAL_V       3000
 #define RIGHT_MAX_V            30000
 
 /* 左摩擦轮M3508电机PID参数 */
 /* 速度环 */
-#define LEFT_KP_V           18
-#define LEFT_KI_V           2
-#define LEFT_KD_V           0.02f
-#define LEFT_INTEGRAL_V     2000
+#define LEFT_KP_V           23
+#define LEFT_KI_V           4
+#define LEFT_KD_V           0.001f
+#define LEFT_INTEGRAL_V     3000
 #define LEFT_MAX_V          30000
 
 // TODO：PID参数初次微调已完成，期待后续微调
