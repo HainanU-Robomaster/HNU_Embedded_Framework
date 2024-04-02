@@ -86,8 +86,8 @@
 
 /******** 底盘最大速度设置 *******/
 /* 底盘移动最大速度，单位是毫米每秒 */
-#define MAX_CHASSIS_VX_SPEED 5000
-#define MAX_CHASSIS_VY_SPEED 5000
+#define MAX_CHASSIS_VX_SPEED 8000
+#define MAX_CHASSIS_VY_SPEED 8000
 /* 底盘旋转最大速度，单位是度每秒 */
 #define MAX_CHASSIS_VR_SPEED 8
 
@@ -100,9 +100,9 @@
 #define CHASSIS_MAX_V_MOTOR             16000
 // TODO: 参数待整定
 /* 跟随云台PID */
-#define CHASSIS_KP_V_FOLLOW             0.4
+#define CHASSIS_KP_V_FOLLOW             0.2f
 #define CHASSIS_KI_V_FOLLOW             0
-#define CHASSIS_KD_V_FOLLOW             0
+#define CHASSIS_KD_V_FOLLOW             0.01f
 #define CHASSIS_INTEGRAL_V_FOLLOW       300
 #define CHASSIS_MAX_V_FOLLOW            1500
 
@@ -110,9 +110,18 @@
 #define YAW_MOTOR_ID     0x207
 #define PITCH_MOTOR_ID   0x208
 
+/*云台编码器归中*/
+#define GIMBAL_SIDEWAYS
+#ifdef GIMBAL_SIDEWAYS
+#define SIDEWAYS_ANGLE   36
+#define CENTER_ECD_YAW   3818         //云台yaw轴编码器归中值(侧身)
+#else
 #define CENTER_ECD_YAW   3818         //云台yaw轴编码器归中值
-#define CENTER_ECD_PITCH 5515         //云台pitch轴编码器归中值
+#define SIDEWAYS_ANGLE   0
+#endif
 
+
+#define CENTER_ECD_PITCH 5515         //云台pitch轴编码器归中值
 /* pitch轴最大仰角 */
 #define PIT_ANGLE_MAX        31.0f
 /* pitch轴最大俯角 */
@@ -121,7 +130,7 @@
 /* 云台控制周期 (ms) */
 #define GIMBAL_PERIOD 1
 /* 云台回中初始化时间 (ms) */
-#define BACK_CENTER_TIME 500
+#define BACK_CENTER_TIME 300
 
 /* -------------------------------- 云台电机PID参数 ------------------------------- */
 /* 云台yaw轴电机PID参数 */
@@ -172,7 +181,7 @@
 #define PITCH_INTEGRAL_A_IMU     0.2f
 #define PITCH_MAX_A_IMU          20
 /* auto速度环 */
-#define PITCH_KP_V_AUTO          5200+400+150  // 4250
+#define PITCH_KP_V_AUTO          5200  // 4250
 #define PITCH_KI_V_AUTO          200  //1000 300
 #define PITCH_KD_V_AUTO          3
 #define PITCH_INTEGRAL_V_AUTO    1500
