@@ -146,6 +146,7 @@ void gimbal_thread_entry(void *argument)
             gim_fdb.yaw_relative_angle = -yaw_motor_relive;
 
             gim_fdb.yaw_offset_angle=ins_data.yaw;
+            gim_fdb.pit_offset_angle=ins_data.pitch;
                 if (auto_staus==0)
                 {
                     auto_staus=1;
