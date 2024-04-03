@@ -9,8 +9,8 @@
 #define CPU_FREQUENCY 168     /* CPU主频(mHZ) */
 
 /* 底盘和云台分别对应的 can 设备名称 */
-#define CAN_CHASSIS    "can1"
-#define CAN_GIMBAL     "can2"
+#define CAN_CHASSIS    "can2"
+#define CAN_GIMBAL     "can1"
 
 /* 磁力计所挂载的 i2c 设备名称(软件i2c) */
 #define I2C_MAG        "i2c1"    //"Notice: PA8 --> 8; PC9 --> 41"
@@ -107,8 +107,8 @@
 #define CHASSIS_MAX_V_FOLLOW            1500
 
 /* ---------------------------------- 云台相关 ---------------------------------- */
-#define YAW_MOTOR_ID     0x207
-#define PITCH_MOTOR_ID   0x208
+#define YAW_MOTOR_ID     0x208
+#define PITCH_MOTOR_ID   0x207
 
 /*云台编码器归中*/
 #define GIMBAL_SIDEWAYS

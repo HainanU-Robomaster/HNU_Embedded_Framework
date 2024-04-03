@@ -132,6 +132,14 @@ void ins_thread_entry(void *argument)
             ins_msg_p.gyro[0] =-ins.gyro[0];
             ins_msg_p.gyro[1] = ins.gyro[1];
             ins_msg_p.gyro[2] =-ins.gyro[2];
+
+            //因为平步和全向轮C板代码安装方向不一致，故需要进行更改
+            ins_msg_p.gyro[Y]=-ins.gyro[Y];
+            ins_msg_p.gyro[Z]=ins.gyro[Z];
+            ins_msg_p.yaw=-ins.yaw;
+            ins_msg_p.pitch=-(ins.pitch);
+            ins_msg_p.yaw_total_angle=-ins.yaw_total_angle;
+
             pub_push_msg(ins_pub, &ins_msg_p);
         }
 

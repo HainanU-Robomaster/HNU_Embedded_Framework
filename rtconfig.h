@@ -99,6 +99,7 @@
 #define RT_USBD_THREAD_STACK_SZ 4096
 #define USB_VENDOR_ID 0x0FFE
 #define USB_PRODUCT_ID 0x0001
+#define _RT_USB_DEVICE_CDC
 #define RT_USB_DEVICE_CDC
 #define RT_VCOM_TASK_STK_SIZE 512
 #define RT_CDC_RX_BUFSIZE 128
@@ -195,13 +196,18 @@
 
 /* peripheral libraries and drivers */
 
+/* HAL & SDK Drivers */
+
+/* STM32 HAL & SDK Drivers */
+
+
+/* Kendryte SDK */
+
+
 /* sensors drivers */
 
 
 /* touch drivers */
-
-
-/* Kendryte SDK */
 
 
 /* AI packages */
@@ -321,7 +327,6 @@
 #define BSP_USING_GIMBAL_TASK
 #define BSP_USING_TRANSMISSION_TASK
 #define BSP_USING_SHOOT_TASK
-#define BSP_USING_REFEREE_TASK
 
 /* RoboMaster Robot Types */
 

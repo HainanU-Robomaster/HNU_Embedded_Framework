@@ -62,6 +62,7 @@ struct ins_msg
 /**
  * @brief cmd发布的底盘控制数据,由chassis订阅
  */
+#ifdef BSP_USING_CHASSIS_TASK
 struct chassis_cmd_msg
 {
     float vx;                  // 前进方向速度
@@ -71,6 +72,7 @@ struct chassis_cmd_msg
     chassis_mode_e ctrl_mode;  // 当前底盘控制模式
     chassis_mode_e last_mode;  // 上一次底盘控制模式
 };
+#endif /* BSP_USING_CHASSIS_TASK */
 
 /**
  * @brief cmd发布的云台控制数据,由gimbal订阅

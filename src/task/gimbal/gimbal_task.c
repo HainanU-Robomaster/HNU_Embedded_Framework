@@ -48,7 +48,7 @@ static struct gimbal_controller_t{
 motor_config_t gimbal_motor_config[GIM_MOTOR_NUM] = {
         {
                 .motor_type = GM6020,
-                .can_name = CAN_CHASSIS,
+                .can_name = CAN_GIMBAL,
                 .rx_id = YAW_MOTOR_ID,
                 .controller = &gim_controller[YAW],
         },
@@ -86,6 +86,7 @@ void gimbal_thread_entry(void *argument)
     gimbal_pub_init();
     gimbal_sub_init();
     gimbal_motor_init();
+    //BACK_CENTER_TIME和之前平步云台，待评测
     yaw_ramp = ramp_register(0, BACK_CENTER_TIME/GIMBAL_PERIOD);
     pit_ramp = ramp_register(0, BACK_CENTER_TIME/GIMBAL_PERIOD);
 
@@ -364,7 +365,7 @@ static rt_int16_t motor_control_pitch(dji_motor_measure_t measure){
         /*串级pid的使用，角度环套在速度环上面*/
         /* 注意负号 */
         pid_out_angle = pid_calculate(pid_angle, get_angle, gim_motor_ref[PITCH]);  // 编码器增长方向与imu相反
-        send_data = pid_calculate(pid_speed, get_speed, pid_out_angle);     // 电机转动正方向与imu相反
+        send_data = -pid_calculate(pid_speed, get_speed, pid_out_angle);     // 电机转动正方向与imu相反
     }
     else /* imu闭环 */
     {
@@ -372,7 +373,7 @@ static rt_int16_t motor_control_pitch(dji_motor_measure_t measure){
         VAL_LIMIT(gim_motor_ref[PITCH], PIT_ANGLE_MIN, PIT_ANGLE_MAX);
         /* 注意负号 */
         pid_out_angle = pid_calculate(pid_angle, get_angle, gim_motor_ref[PITCH]);
-        send_data = pid_calculate(pid_speed, get_speed, pid_out_angle);      // 电机转动正方向与imu相反
+        send_data = -pid_calculate(pid_speed, get_speed, pid_out_angle);      // 电机转动正方向与imu相反
     }
 
     return send_data;
