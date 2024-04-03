@@ -549,7 +549,7 @@ static void remote_to_cmd_pc_controler(void)
     if((rc_now->mouse.l==1||rc_now->wheel>=200)&&shoot_cmd.friction_status==1&&(power_heat_data_t.shooter_id1_17mm_cooling_heat < (robot_status.shooter_barrel_heat_limit-10)))
     {
         shoot_cmd.ctrl_mode=SHOOT_COUNTINUE;
-        shoot_cmd.shoot_freq=1600;
+        shoot_cmd.shoot_freq=3000;
     }
     else
     {
