@@ -21,6 +21,8 @@ static struct chassis_cmd_msg chassis_cmd;
 static publisher_t *pub_chassis;
 static subscriber_t *sub_cmd;
 
+static rt_device_t chas_com_can; // 上下板间通讯 can 设备
+
 static void chassis_pub_init(void);
 static void chassis_sub_init(void);
 static void chassis_pub_push(void);
@@ -60,6 +62,7 @@ void (*chassis_calc_moto_speed)(struct chassis_cmd_msg *cmd, int16_t* out_speed)
 #endif /* BSP_CHASSIS_MECANUM_MODE */
 
 static void absolute_cal(struct chassis_cmd_msg *cmd, float angle);
+static void com_send_relative_angle(float *angle);
 static struct chassis_real_speed_t
 {
     float chassis_vx_ch;
@@ -80,6 +83,7 @@ void chassis_thread_entry(void *argument)
     chassis_sub_init();
 //    chassis_motor_init();
 //    TIM_Init();
+    chas_com_can = rt_device_find(CAN_CHASSIS);
 
     LOG_I("Chassis Task Start");
     for (;;)
@@ -134,6 +138,7 @@ void chassis_thread_entry(void *argument)
 //            }
 //            break;
 //        }
+        com_send_relative_angle(&chassis_cmd.offset_angle);
 
         /* 更新发布该线程的msg */
         chassis_pub_push();
@@ -178,6 +183,36 @@ static void chassis_pub_push(void)
 static void chassis_sub_pull(void)
 {
     sub_get_msg(sub_cmd, &chassis_cmd);
+}
+
+static void chassis_com_can_send(rt_uint32_t id, rt_uint8_t data[8])
+{
+    static struct rt_can_msg msg = {0};
+    uint8_t size = 0;
+
+    msg.id = id;
+    msg.ide = RT_CAN_STDID;
+    msg.rtr = RT_CAN_DTR;
+    msg.len = 8;
+    rt_memcpy(msg.data, data, 8);
+
+    size = rt_device_write(chas_com_can, 0, &msg, sizeof(msg));
+    if (size == 0)
+    {
+        LOG_W("can dev write data failed!");
+    }
+}
+
+static void com_send_relative_angle(float *angle)
+{
+    uint8_t data[8] = {0};
+    uint32_t *buf = (uint32_t *)angle;
+    //第一位用于判断是否唤醒底盘
+    data[3] = *buf >> 24;
+    data[2] = *buf >> 16;
+    data[1] = *buf >> 8;
+    data[0] = *buf;
+    chassis_com_can_send(CAN_RPY_TX, data);
 }
 
 #define CURRENT_POWER_LIMIT_RATE 80

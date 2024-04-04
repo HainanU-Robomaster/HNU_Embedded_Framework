@@ -25,6 +25,8 @@ static struct chassis_cmd_msg chassis_cmd;
 static struct trans_fdb_msg  trans_fdb;
 static struct ins_msg ins_data;
 
+// 添加裁判系统关键信息，枪口热量等
+
 static rc_dbus_obj_t *rc_now, *rc_last;
 
 static void cmd_pub_init(void);
@@ -163,6 +165,33 @@ static void cmd_sub_pull(void)
     sub_get_msg(sub_shoot, &shoot_fdb);
     sub_get_msg(sub_trans,&trans_fdb);
     sub_get_msg(sub_ins, &ins_data);
+}
+
+/* -------------------------------------------------------------------------- */
+/*                                板间通讯接收回调处理函数                                */
+/* -------------------------------------------------------------------------- */
+void gimbal_board_rx_callback(rt_device_t dev, uint32_t id, uint8_t *data)
+{
+    // if(dev != chas_com_can)
+    //     return;
+    
+    switch (id)
+    {
+    case CAN_REFEREE_INFO:
+        /* code */
+        // data 拼装
+    //     uint8_t sendbuf[8];
+    //    sendbuf[0] = robot_status.mains_power_shooter_output;
+    //    sendbuf[1] = robot_status.shooter_id1_17mm_cooling_limit>>8;
+    //    sendbuf[2] = robot_status.shooter_id1_17mm_cooling_limit;
+    //    sendbuf[3] = power_heat_data_t.shooter_id1_17mm_cooling_heat>>8;
+    //    sendbuf[4] = power_heat_data_t.shooter_id1_17mm_cooling_heat;
+        break;
+    
+    default:
+        return;
+        break;
+    }
 }
 
 /* ------------------------------ 将遥控器数据转换为控制指令 ----------------------------- */

@@ -5,6 +5,9 @@
 */
 #include "usr_callback.h"
 #include "rm_module.h"
+#include "rm_task.h"
+
+// TODO: 2024联盟赛期间，紧急增加上下板间 CAN 通信，后续需要整理优化
 
 // 将CAN1和CAN2注册的回调函数分开，避免两个总线上的相同ID冲突
 #ifdef BSP_USING_CAN1
@@ -25,6 +28,8 @@ rt_err_t can1_rx_call(rt_device_t dev, rt_size_t size)
 #ifdef BSP_USING_LK_MOTOR
     lk_motot_rx_callback(dev, rxmsg.id, rxbuff);
 #endif /* BSP_USING_LK_MOTOR */
+
+    gimbal_board_rx_callback(dev, rxmsg.id, rxbuff);
 
     return RT_EOK;
 }
