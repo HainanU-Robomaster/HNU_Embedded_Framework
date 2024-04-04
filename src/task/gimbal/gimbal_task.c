@@ -101,6 +101,11 @@ void gimbal_thread_entry(void *argument)
         yaw_motor_relive = -(rt_int16_t)get_relative_pos(gim_motor[YAW]->measure.ecd, CENTER_ECD_YAW) / 22.75f;
         pitch_motor_relive = (rt_int16_t )get_relative_pos(gim_motor[PITCH]->measure.ecd, CENTER_ECD_PITCH) / 22.75f;
 
+//        if((gim_cmd.ctrl_mode==GIMBAL_GYRO||GIMBAL_AUTO)&&gim_fdb.back_mode==BACK_IS_OK)
+//        {
+//        yaw_motor_relive = (rt_int16_t)(gim_cmd.yaw+ins_data.yaw_total_angle);
+//        }
+
         for (uint8_t i = 0; i < GIM_MOTOR_NUM; i++)
         {
             dji_motor_enable(gim_motor[i]);
@@ -144,7 +149,7 @@ void gimbal_thread_entry(void *argument)
             gim_motor_ref[PITCH] = gim_cmd.pitch;
             // 底盘相对于云台归中值的角度，取负
             gim_fdb.yaw_relative_angle = -yaw_motor_relive;
-
+//            gim_fdb.yaw_relative_angle = -(/*ins_data.yaw_total_angle - */gim_fdb.yaw_offset_angle_total);
             gim_fdb.yaw_offset_angle=ins_data.yaw;
             gim_fdb.pit_offset_angle=ins_data.pitch;
                 if (auto_staus==0)
@@ -264,7 +269,7 @@ static void gimbal_motor_init()
     gim_controller[PITCH].pid_angle_auto = pid_register(&pitch_angle_auto_config);
     gim_motor[PITCH] = dji_motor_register(&gimbal_motor_config[PITCH], motor_control_pitch);
 }
-
+rt_int16_t test_speed_yaw, test_speed_pitch;
 static rt_int16_t motor_control_yaw(dji_motor_measure_t measure){
     /* PID局部指针，切换不同模式下PID控制器 */
     static pid_obj_t *pid_angle;

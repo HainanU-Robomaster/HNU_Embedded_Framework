@@ -110,7 +110,7 @@ void shoot_task_entry(void* argument)
         if (shoot_cmd.cover_open == 1)
             rt_pwm_set(servo_cover_dev, PWM_COVER_CH, 20000000, 2000000);
         else
-            rt_pwm_set(servo_cover_dev, PWM_COVER_CH, 20000000, 780000);
+            rt_pwm_set(servo_cover_dev, PWM_COVER_CH, 20000000, 750000);
 
         /* 电机控制启动 */
         for (uint8_t i = 0; i < SHT_MOTOR_NUM; i++)
@@ -280,7 +280,7 @@ void shoot_task_entry(void* argument)
             break;
 
         case SHOOT_REVERSE:
-            shoot_motor_ref[TRIGGER_MOTOR]=  -2500;
+            shoot_motor_ref[TRIGGER_MOTOR]=  -3000;
             total_angle_flag = 0;
             break;
 
