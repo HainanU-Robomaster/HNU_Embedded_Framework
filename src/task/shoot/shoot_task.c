@@ -227,8 +227,8 @@ void shoot_task_entry(void* argument)
         if (shoot_cmd.friction_status==1)
         {
             //全向轮和平步电机安装不一致
-            shoot_motor_ref[RIGHT_FRICTION] = 6000;//摩擦轮常转
-            shoot_motor_ref[LEFT_FRICTION]  = -6000;
+            shoot_motor_ref[RIGHT_FRICTION] = 7000;//摩擦轮常转
+            shoot_motor_ref[LEFT_FRICTION]  = -7000;
             /*从自动连发模式切换三连发及单发模式时，要继承总转子角度*/
         }
         else

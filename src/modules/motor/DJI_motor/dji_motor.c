@@ -225,8 +225,8 @@ void dji_motor_control()
         send_msg[group].data[2 * num + 1] = (uint8_t)(set & 0x00ff);
 
         // 若该电机处于停止状态,直接将buff置零
-        if (motor->stop_flag == MOTOR_STOP)
-            rt_memset(send_msg[group].data + 2 * num, 0, 2 * sizeof(rt_uint8_t));
+       if (motor->stop_flag == MOTOR_STOP)
+           rt_memset(send_msg[group].data + 2 * num, 0, 2 * sizeof(rt_uint8_t));
     }
 
     // 遍历flag,检查是否要发送这一帧报文

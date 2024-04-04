@@ -9,8 +9,8 @@
 #define CPU_FREQUENCY 168     /* CPU主频(mHZ) */
 
 /* 底盘和云台分别对应的 can 设备名称 */
-#define CAN_CHASSIS    "can2"
-#define CAN_GIMBAL     "can1"
+#define CAN_CHASSIS    "can1"
+#define CAN_GIMBAL     "can2"
 
 /* 磁力计所挂载的 i2c 设备名称(软件i2c) */
 #define I2C_MAG        "i2c1"    //"Notice: PA8 --> 8; PC9 --> 41"
@@ -111,17 +111,17 @@
 #define PITCH_MOTOR_ID   0x207
 
 /*云台编码器归中*/
-#define GIMBAL_SIDEWAYS
+// #define GIMBAL_SIDEWAYS
 #ifdef GIMBAL_SIDEWAYS
-#define SIDEWAYS_ANGLE   36
-#define CENTER_ECD_YAW   3818         //云台yaw轴编码器归中值(侧身)
+#define SIDEWAYS_ANGLE   90
+#define CENTER_ECD_YAW   7512         //云台yaw轴编码器归中值(侧身)
 #else
-#define CENTER_ECD_YAW   3818         //云台yaw轴编码器归中值
+#define CENTER_ECD_YAW   5494         //云台yaw轴编码器归中值
 #define SIDEWAYS_ANGLE   0
 #endif
 
 
-#define CENTER_ECD_PITCH 5515         //云台pitch轴编码器归中值
+#define CENTER_ECD_PITCH  2066//云台pitch轴编码器归中值
 /* pitch轴最大仰角 */
 #define PIT_ANGLE_MAX        31.0f
 /* pitch轴最大俯角 */
@@ -135,15 +135,15 @@
 /* -------------------------------- 云台电机PID参数 ------------------------------- */
 /* 云台yaw轴电机PID参数 */
 /* imu速度环 */
-#define YAW_KP_V_IMU             5000
-#define YAW_KI_V_IMU             200
-#define YAW_KD_V_IMU             10
+#define YAW_KP_V_IMU             6000
+#define YAW_KI_V_IMU             0
+#define YAW_KD_V_IMU             0.005
 #define YAW_INTEGRAL_V_IMU       1000
 #define YAW_MAX_V_IMU            30000
 /* imu角度环 */
 #define YAW_KP_A_IMU             0.35f
 #define YAW_KI_A_IMU             0
-#define YAW_KD_A_IMU             0.001f
+#define YAW_KD_A_IMU             0.0004f
 #define YAW_INTEGRAL_A_IMU       5
 #define YAW_MAX_A_IMU            25
 /* auto速度环 */
@@ -162,10 +162,10 @@
 /* 云台PITCH轴电机PID参数 */
 /* imu速度环 */
 #define PITCH_KP_V_IMU           5000
-#define PITCH_KI_V_IMU           1000
-#define PITCH_KD_V_IMU           3
-#define PITCH_INTEGRAL_V_IMU     1500
-#define PITCH_MAX_V_IMU          20000
+#define PITCH_KI_V_IMU           0
+#define PITCH_KD_V_IMU           0.002
+#define PITCH_INTEGRAL_V_IMU     1000
+#define PITCH_MAX_V_IMU          30000
 /*
 #define PITCH_KP_V_IMU           4250
 #define PITCH_KI_V_IMU           1000
@@ -175,9 +175,9 @@
 */
 
 /* imu角度环 */
-#define PITCH_KP_A_IMU           0.8f
+#define PITCH_KP_A_IMU           0.6f
 #define PITCH_KI_A_IMU           0.0f
-#define PITCH_KD_A_IMU           0.005f
+#define PITCH_KD_A_IMU           0.0022f
 #define PITCH_INTEGRAL_A_IMU     0.2f
 #define PITCH_MAX_A_IMU          20
 /* auto速度环 */

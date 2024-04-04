@@ -27,8 +27,10 @@ static void chassis_pub_push(void);
 static void chassis_sub_pull(void);
 
 /* -------------------------------- 裁判系统底盘功率相关 ------------------------------- */
+#ifdef BSP_USING_REFEREE
 extern robot_status_t robot_status;
 extern ext_power_heat_data_t power_heat_data_t;
+#endif /* BSP_USING_REFEREE */
 /* --------------------------------- 电机控制相关 --------------------------------- */
 static pid_obj_t *follow_pid; // 用于底盘跟随云台计算vw
 static pid_config_t chassis_follow_config = INIT_PID_CONFIG(CHASSIS_KP_V_FOLLOW, CHASSIS_KI_V_FOLLOW, CHASSIS_KD_V_FOLLOW, CHASSIS_INTEGRAL_V_FOLLOW, CHASSIS_MAX_V_FOLLOW,
@@ -76,62 +78,62 @@ void chassis_thread_entry(void *argument)
 
     chassis_pub_init();
     chassis_sub_init();
-    chassis_motor_init();
-    TIM_Init();
+//    chassis_motor_init();
+//    TIM_Init();
 
     LOG_I("Chassis Task Start");
     for (;;)
     {
-        cmd_start = dwt_get_time_ms();
-        /* 计算实际速度 */
-        omni_get_speed(chassis_motor);
+//        cmd_start = dwt_get_time_ms();
+//        /* 计算实际速度 */
+//        omni_get_speed(chassis_motor);
         /* 更新该线程所有的订阅者 */
         chassis_sub_pull();
 
-        for (uint8_t i = 0; i < 4; i++)
-        {
-            dji_motor_enable(chassis_motor[i]);
-        }
-
-        switch (chassis_cmd.ctrl_mode)
-        {
-        case CHASSIS_RELAX:
-            for (uint8_t i = 0; i < 4; i++)
-            {
-                dji_motor_relax(chassis_motor[i]);
-            }
-                pid_clear(follow_pid);
-            break;
-        case CHASSIS_FOLLOW_GIMBAL:
-            chassis_cmd.vw = pid_calculate(follow_pid, chassis_cmd.offset_angle, SIDEWAYS_ANGLE);
-            /* 底盘运动学解算 */
-            absolute_cal(&chassis_cmd, chassis_cmd.offset_angle);
-            chassis_calc_moto_speed(&chassis_cmd, motor_ref);
-            break;
-        case CHASSIS_SPIN:
-            absolute_cal(&chassis_cmd, chassis_cmd.offset_angle);
-            chassis_calc_moto_speed(&chassis_cmd, motor_ref);
-            pid_clear(follow_pid);
-            break;
-        case CHASSIS_OPEN_LOOP:
-            chassis_calc_moto_speed(&chassis_cmd, motor_ref);
-            pid_clear(follow_pid);
-            break;
-        case CHASSIS_STOP:
-            rt_memset(motor_ref, 0, sizeof(motor_ref));
-            pid_clear(follow_pid);
-            break;
-        case CHASSIS_FLY:
-            break;
-        case CHASSIS_AUTO:
-            break;
-        default:
-            for (uint8_t i = 0; i < 4; i++)
-            {
-                dji_motor_relax(chassis_motor[i]);
-            }
-            break;
-        }
+//        for (uint8_t i = 0; i < 4; i++)
+//        {
+//            dji_motor_enable(chassis_motor[i]);
+//        }
+//
+//        switch (chassis_cmd.ctrl_mode)
+//        {
+//        case CHASSIS_RELAX:
+//            for (uint8_t i = 0; i < 4; i++)
+//            {
+//                dji_motor_relax(chassis_motor[i]);
+//            }
+//                pid_clear(follow_pid);
+//            break;
+//        case CHASSIS_FOLLOW_GIMBAL:
+//            chassis_cmd.vw = pid_calculate(follow_pid, chassis_cmd.offset_angle, SIDEWAYS_ANGLE);
+//            /* 底盘运动学解算 */
+//            absolute_cal(&chassis_cmd, chassis_cmd.offset_angle);
+//            chassis_calc_moto_speed(&chassis_cmd, motor_ref);
+//            break;
+//        case CHASSIS_SPIN:
+//            absolute_cal(&chassis_cmd, chassis_cmd.offset_angle);
+//            chassis_calc_moto_speed(&chassis_cmd, motor_ref);
+//            pid_clear(follow_pid);
+//            break;
+//        case CHASSIS_OPEN_LOOP:
+//            chassis_calc_moto_speed(&chassis_cmd, motor_ref);
+//            pid_clear(follow_pid);
+//            break;
+//        case CHASSIS_STOP:
+//            rt_memset(motor_ref, 0, sizeof(motor_ref));
+//            pid_clear(follow_pid);
+//            break;
+//        case CHASSIS_FLY:
+//            break;
+//        case CHASSIS_AUTO:
+//            break;
+//        default:
+//            for (uint8_t i = 0; i < 4; i++)
+//            {
+//                dji_motor_relax(chassis_motor[i]);
+//            }
+//            break;
+//        }
 
         /* 更新发布该线程的msg */
         chassis_pub_push();
@@ -184,27 +186,27 @@ static rt_int16_t motor_control_0(dji_motor_measure_t measure)
     static rt_int16_t set = 0;
     static int16_t chassis_max_current=0;
     static int16_t chassis_power_limit=0;
-    /*传参给局部变量防止被更改抽风*/
-    chassis_power_limit=(int16_t)robot_status.chassis_power_limit;
-    /*底盘功率限制防止buffer溢出*/
-    if(chassis_power_limit>=120)
-    {
-        chassis_power_limit=120;
-    }
-    if(power_heat_data_t.chassis_power_buffer<20)
-    {
-        chassis_max_current=chassis_power_limit*CURRENT_POWER_LIMIT_RATE*(power_heat_data_t.chassis_power_buffer/50);
-    }
-    else
-    {
-        chassis_max_current=chassis_power_limit*CURRENT_POWER_LIMIT_RATE;
-    }
-    if (chassis_power_limit==0)
-    {
-        chassis_max_current=8000;
-    }
-    set =(rt_int16_t) pid_calculate(chassis_controller[0].speed_pid, measure.speed_rpm, motor_ref[0]);
-    VAL_LIMIT(set , -chassis_max_current, chassis_max_current);
+//    /*传参给局部变量防止被更改抽风*/
+//    chassis_power_limit=(int16_t)robot_status.chassis_power_limit;
+//    /*底盘功率限制防止buffer溢出*/
+//    if(chassis_power_limit>=120)
+//    {
+//        chassis_power_limit=120;
+//    }
+//    if(power_heat_data_t.chassis_power_buffer<20)
+//    {
+//        chassis_max_current=chassis_power_limit*CURRENT_POWER_LIMIT_RATE*(power_heat_data_t.chassis_power_buffer/50);
+//    }
+//    else
+//    {
+//        chassis_max_current=chassis_power_limit*CURRENT_POWER_LIMIT_RATE;
+//    }
+//    if (chassis_power_limit==0)
+//    {
+//        chassis_max_current=8000;
+//    }
+//    set =(rt_int16_t) pid_calculate(chassis_controller[0].speed_pid, measure.speed_rpm, motor_ref[0]);
+//    VAL_LIMIT(set , -chassis_max_current, chassis_max_current);
     return set;
 }
 
@@ -214,27 +216,27 @@ static rt_int16_t motor_control_1(dji_motor_measure_t measure)
     static rt_int16_t set = 0;
     static int16_t chassis_max_current=0;
     static int16_t chassis_power_limit=0;
-    /*传参给局部变量防止被更改抽风*/
-    chassis_power_limit=(int16_t)robot_status.chassis_power_limit;
-    /*底盘功率限制防止buffer溢出*/
-    if(chassis_power_limit>=120)
-    {
-        chassis_power_limit=120;
-    }
-    if(power_heat_data_t.chassis_power_buffer<20)
-    {
-        chassis_max_current=chassis_power_limit*CURRENT_POWER_LIMIT_RATE*(power_heat_data_t.chassis_power_buffer/50);
-    }
-    else
-    {
-        chassis_max_current=chassis_power_limit*CURRENT_POWER_LIMIT_RATE;
-    }
-    if (chassis_power_limit==0)
-    {
-        chassis_max_current=8000;
-    }
-    set =(rt_int16_t) pid_calculate(chassis_controller[1].speed_pid, measure.speed_rpm, motor_ref[1]);
-    VAL_LIMIT(set , -chassis_max_current, chassis_max_current);
+//    /*传参给局部变量防止被更改抽风*/
+//    chassis_power_limit=(int16_t)robot_status.chassis_power_limit;
+//    /*底盘功率限制防止buffer溢出*/
+//    if(chassis_power_limit>=120)
+//    {
+//        chassis_power_limit=120;
+//    }
+//    if(power_heat_data_t.chassis_power_buffer<20)
+//    {
+//        chassis_max_current=chassis_power_limit*CURRENT_POWER_LIMIT_RATE*(power_heat_data_t.chassis_power_buffer/50);
+//    }
+//    else
+//    {
+//        chassis_max_current=chassis_power_limit*CURRENT_POWER_LIMIT_RATE;
+//    }
+//    if (chassis_power_limit==0)
+//    {
+//        chassis_max_current=8000;
+//    }
+//    set =(rt_int16_t) pid_calculate(chassis_controller[1].speed_pid, measure.speed_rpm, motor_ref[1]);
+//    VAL_LIMIT(set , -chassis_max_current, chassis_max_current);
     return set;
 }
 
@@ -244,26 +246,26 @@ static rt_int16_t motor_control_2(dji_motor_measure_t measure)
     static int16_t chassis_max_current=0;
     static int16_t chassis_power_limit=0;
     /*传参给局部变量防止被更改抽风*/
-    chassis_power_limit=(int16_t)robot_status.chassis_power_limit;
-    /*底盘功率限制防止buffer溢出*/
-    if(chassis_power_limit>=120)
-    {
-        chassis_power_limit=120;
-    }
-    if(power_heat_data_t.chassis_power_buffer<20)
-    {
-        chassis_max_current=chassis_power_limit*CURRENT_POWER_LIMIT_RATE*(power_heat_data_t.chassis_power_buffer/50);
-    }
-    else
-    {
-        chassis_max_current=chassis_power_limit*CURRENT_POWER_LIMIT_RATE;
-    }
-    if (chassis_power_limit==0)
-    {
-        chassis_max_current=8000;
-    }
-    set =(rt_int16_t) pid_calculate(chassis_controller[2].speed_pid, measure.speed_rpm, motor_ref[2]);
-    VAL_LIMIT(set , -chassis_max_current, chassis_max_current);
+//    chassis_power_limit=(int16_t)robot_status.chassis_power_limit;
+//    /*底盘功率限制防止buffer溢出*/
+//    if(chassis_power_limit>=120)
+//    {
+//        chassis_power_limit=120;
+//    }
+//    if(power_heat_data_t.chassis_power_buffer<20)
+//    {
+//        chassis_max_current=chassis_power_limit*CURRENT_POWER_LIMIT_RATE*(power_heat_data_t.chassis_power_buffer/50);
+//    }
+//    else
+//    {
+//        chassis_max_current=chassis_power_limit*CURRENT_POWER_LIMIT_RATE;
+//    }
+//    if (chassis_power_limit==0)
+//    {
+//        chassis_max_current=8000;
+//    }
+//    set =(rt_int16_t) pid_calculate(chassis_controller[2].speed_pid, measure.speed_rpm, motor_ref[2]);
+//    VAL_LIMIT(set , -chassis_max_current, chassis_max_current);
     return set;
 }
 
@@ -272,27 +274,27 @@ static rt_int16_t motor_control_3(dji_motor_measure_t measure)
     static rt_int16_t set = 0;
     static int16_t chassis_max_current=0;
     static int16_t chassis_power_limit=0;
-    /*传参给局部变量防止被更改抽风*/
-    chassis_power_limit=(int16_t)robot_status.chassis_power_limit;
-    /*底盘功率限制防止buffer溢出*/
-    if(chassis_power_limit>=120)
-    {
-        chassis_power_limit=120;
-    }
-    if(power_heat_data_t.chassis_power_buffer<20)
-    {
-        chassis_max_current=chassis_power_limit*CURRENT_POWER_LIMIT_RATE*(power_heat_data_t.chassis_power_buffer/50);
-    }
-    else
-    {
-        chassis_max_current=chassis_power_limit*CURRENT_POWER_LIMIT_RATE;
-    }
-    if (chassis_power_limit==0)
-    {
-        chassis_max_current=8000;
-    }
-    set =(rt_int16_t) pid_calculate(chassis_controller[3].speed_pid, measure.speed_rpm, motor_ref[3]);
-    VAL_LIMIT(set , -chassis_max_current, chassis_max_current);
+//    /*传参给局部变量防止被更改抽风*/
+//    chassis_power_limit=(int16_t)robot_status.chassis_power_limit;
+//    /*底盘功率限制防止buffer溢出*/
+//    if(chassis_power_limit>=120)
+//    {
+//        chassis_power_limit=120;
+//    }
+//    if(power_heat_data_t.chassis_power_buffer<20)
+//    {
+//        chassis_max_current=chassis_power_limit*CURRENT_POWER_LIMIT_RATE*(power_heat_data_t.chassis_power_buffer/50);
+//    }
+//    else
+//    {
+//        chassis_max_current=chassis_power_limit*CURRENT_POWER_LIMIT_RATE;
+//    }
+//    if (chassis_power_limit==0)
+//    {
+//        chassis_max_current=8000;
+//    }
+//    set =(rt_int16_t) pid_calculate(chassis_controller[3].speed_pid, measure.speed_rpm, motor_ref[3]);
+//    VAL_LIMIT(set , -chassis_max_current, chassis_max_current);
     return set;
 }
 

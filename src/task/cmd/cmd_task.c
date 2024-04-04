@@ -46,8 +46,8 @@ static float gyro_pitch_inherit;
 /*用于清除环形缓冲区buffer的指针*/
 extern rt_uint8_t *r_buffer_point;
 /*----------------------------------裁判系统数据接收/比赛状态-------------------------------------*/
-extern robot_status_t robot_status;
-extern ext_power_heat_data_t power_heat_data_t;
+//extern robot_status_t robot_status;
+//extern ext_power_heat_data_t power_heat_data_t;
 /*案件状态标志位*/
 static int key_e_status=-1;
 static int key_f_status=-1;
@@ -519,7 +519,7 @@ static void remote_to_cmd_pc_controler(void)
     }
     if (chassis_cmd.ctrl_mode==CHASSIS_SPIN)
     {
-        chassis_cmd.vw=2+2*robot_status.chassis_power_limit/60;
+//        chassis_cmd.vw=2+2*robot_status.chassis_power_limit/60;
     }
     /*TODO:--------------------------------------------------发射模块状态机--------------------------------------------------------------*/
     /*-----------------------------------------开关摩擦轮--------------------------------------------*/
@@ -546,7 +546,7 @@ static void remote_to_cmd_pc_controler(void)
         shoot_cmd.friction_status=0;
     }
     /*TODO:------------------------------------------------------------扳机连发模式---------------------------------------------------------*/
-    if((rc_now->mouse.l==1||rc_now->wheel>=200)&&shoot_cmd.friction_status==1&&(power_heat_data_t.shooter_id1_17mm_cooling_heat < (robot_status.shooter_barrel_heat_limit-10)))
+    if((rc_now->mouse.l==1||rc_now->wheel>=200)&&shoot_cmd.friction_status==1)
     {
         shoot_cmd.ctrl_mode=SHOOT_COUNTINUE;
         shoot_cmd.shoot_freq=1600;
@@ -560,11 +560,11 @@ static void remote_to_cmd_pc_controler(void)
     /*-------------------------------------------------------------堵弹反转检测------------------------------------------------------------*/
     if (shoot_fdb.trigger_motor_current>=9500||reverse_cnt!=0)
     {
-        shoot_cmd.ctrl_mode=SHOOT_REVERSE;
-        if (reverse_cnt<120)
-            reverse_cnt++;
-        else
-            reverse_cnt=0;
+//        shoot_cmd.ctrl_mode=SHOOT_REVERSE;
+//        if (reverse_cnt<120)
+//            reverse_cnt++;
+//        else
+//            reverse_cnt=0;
     }
     /*-----------------------------------------------------------舵机开盖关盖--------------------------------------------------------------*/
     if(rc_now->kb.bit.R==1||rc_now->wheel<=-200)

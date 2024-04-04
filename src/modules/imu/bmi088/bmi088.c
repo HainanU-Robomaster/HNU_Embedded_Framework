@@ -153,9 +153,9 @@ static uint8_t cali_count;  // 校准次数
 float bmi088_g_norm;        // 通过校准得出的重力加速度
 float accel_scale;          // 根据标定结果校准加速度计标度因数
 // 需定期校准后手动修改
-#define GxOFFSET  0.00000127707f
-#define GyOFFSET -0.00000808811f
-#define GzOFFSET -0.00002852123f
+#define GxOFFSET  0.00000204331f
+#define GyOFFSET  0.00000183046f
+#define GzOFFSET -0.00000021284f
 #define gNORM 9.744925f
 
 /* Re-implement this function to define customized rotation */

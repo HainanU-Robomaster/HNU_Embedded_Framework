@@ -48,7 +48,7 @@ static struct gimbal_controller_t{
 motor_config_t gimbal_motor_config[GIM_MOTOR_NUM] = {
         {
                 .motor_type = GM6020,
-                .can_name = CAN_GIMBAL,
+                .can_name = CAN_CHASSIS,
                 .rx_id = YAW_MOTOR_ID,
                 .controller = &gim_controller[YAW],
         },
@@ -100,7 +100,7 @@ void gimbal_thread_entry(void *argument)
 
         // 云台本身相对于归中值的角度，加负号
         yaw_motor_relive = -(rt_int16_t)get_relative_pos(gim_motor[YAW]->measure.ecd, CENTER_ECD_YAW) / 22.75f;
-        pitch_motor_relive = (rt_int16_t )get_relative_pos(gim_motor[PITCH]->measure.ecd, CENTER_ECD_PITCH) / 22.75f;
+        pitch_motor_relive = -(rt_int16_t )get_relative_pos(gim_motor[PITCH]->measure.ecd, CENTER_ECD_PITCH) / 22.75f;
 
         for (uint8_t i = 0; i < GIM_MOTOR_NUM; i++)
         {
@@ -266,6 +266,11 @@ static void gimbal_motor_init()
     gim_motor[PITCH] = dji_motor_register(&gimbal_motor_config[PITCH], motor_control_pitch);
 }
 
+rt_int16_t motor_test;
+rt_int16_t motor_test_yaw, motor_test_pitch;
+rt_int16_t test_speed_yaw, test_speed_pitch;
+rt_int16_t test_angle_yaw, test_angle_pitch;
+
 static rt_int16_t motor_control_yaw(dji_motor_measure_t measure){
     /* PID局部指针，切换不同模式下PID控制器 */
     static pid_obj_t *pid_angle;
@@ -318,6 +323,16 @@ static rt_int16_t motor_control_yaw(dji_motor_measure_t measure){
         send_data = -pid_calculate(pid_speed, get_speed, pid_out_angle);      // 电机转动正方向与imu相反
     }
 
+    // if(motor_test)
+    // {
+    //     pid_speed = gim_controller[YAW].pid_speed_imu;
+    //     motor_test_yaw = -pid_calculate(pid_speed, ins_data.gyro[Z], test_speed_yaw);
+    //     return motor_test_yaw;
+    // }
+    // else
+    // {
+    //     return 0;
+    // }
     return send_data;
 }
 
@@ -375,6 +390,17 @@ static rt_int16_t motor_control_pitch(dji_motor_measure_t measure){
         pid_out_angle = pid_calculate(pid_angle, get_angle, gim_motor_ref[PITCH]);
         send_data = -pid_calculate(pid_speed, get_speed, pid_out_angle);      // 电机转动正方向与imu相反
     }
+
+    // if(motor_test)
+    // {
+    //     pid_speed = gim_controller[PITCH].pid_speed_imu;
+    //     motor_test_pitch = -pid_calculate(pid_speed, ins_data.gyro[Y], test_speed_pitch);
+    //     return motor_test_pitch;
+    // }
+    // else
+    // {
+    //     return 0;
+    // }
 
     return send_data;
 }

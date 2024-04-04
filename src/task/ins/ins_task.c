@@ -123,22 +123,19 @@ void ins_thread_entry(void *argument)
             // FIXME:/* 根据陀螺仪安装情况进行调整 */
             // NOTE: yaw轴右为正，pitch轴上为正，roll轴顺时针为正
             ins_msg_p.yaw = -ins.yaw;
-            ins_msg_p.pitch = ins.roll;
+            ins_msg_p.pitch = -(ins.roll);
             ins_msg_p.roll = ins.pitch;
             ins_msg_p.yaw_total_angle = -ins.yaw_total_angle;
             ins_msg_p.accel[0] = ins.accel[0];
-            ins_msg_p.accel[1] = ins.accel[1];
-            ins_msg_p.accel[2] = ins.accel[2];
-            ins_msg_p.gyro[0] =-ins.gyro[0];
-            ins_msg_p.gyro[1] = ins.gyro[1];
+            ins_msg_p.accel[1] =-ins.accel[1];
+            ins_msg_p.accel[2] =-ins.accel[2];
+            ins_msg_p.gyro[0] = ins.gyro[0];
+            ins_msg_p.gyro[1] =-ins.gyro[1];
             ins_msg_p.gyro[2] =-ins.gyro[2];
 
             //因为平步和全向轮C板代码安装方向不一致，故需要进行更改
-            ins_msg_p.gyro[Y]=-ins.gyro[Y];
-            ins_msg_p.gyro[Z]=ins.gyro[Z];
-            ins_msg_p.yaw=-ins.yaw;
-            ins_msg_p.pitch=-(ins.pitch);
-            ins_msg_p.yaw_total_angle=-ins.yaw_total_angle;
+            // ins_msg_p.gyro[1]=-ins.gyro[1];
+            // ins_msg_p.pitch=-(ins.roll);
 
             pub_push_msg(ins_pub, &ins_msg_p);
         }
