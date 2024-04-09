@@ -36,6 +36,8 @@ static void gimbal_sub_pull(void);
 #define X 0
 #define Y 1
 #define Z 2
+
+#define INIT_TIMEOUT 1000  // 单位: ms 初始化归中超时时间
 static struct gimbal_controller_t{
     /* 基于imu数据闭环，主要用于手动模式 */
     pid_obj_t *pid_speed_imu;
@@ -82,6 +84,9 @@ static float gim_dt;
 void gimbal_thread_entry(void *argument)
 {
     static float gim_start;
+    static rt_uint32_t init_start_time; // 云台初始化归中开始时间，避免长时间因为静态误差，卡在归中模式
+    rt_uint32_t init_dt = 0; // 云台初始化归中进行时长
+
 
     gimbal_pub_init();
     gimbal_sub_init();
@@ -127,11 +132,20 @@ void gimbal_thread_entry(void *argument)
             // TODO：加入斜坡算法，可以控制归中时间
             // TODO: 将编码器值转化为角度值
             // TODO: 优化归中逻辑，yaw轴选取最近的方向
+            if(gim_cmd.last_mode != GIMBAL_INIT)
+                init_start_time = dwt_get_time_ms();
+            else
+                init_dt = dwt_get_time_ms() - init_start_time;
 
             gim_motor_ref[YAW] = yaw_motor_relive * ( 1 - yaw_ramp->calc(yaw_ramp));
             gim_motor_ref[PITCH] = pitch_motor_relive* ( 1 - pit_ramp->calc(pit_ramp));
             if((abs(gim_motor[PITCH]->measure.ecd - CENTER_ECD_PITCH) <= 20)
-               && (abs(gim_motor[YAW]->measure.ecd - CENTER_ECD_YAW) <= 80))
+               && (abs(gim_motor[YAW]->measure.ecd - CENTER_ECD_YAW) <= 80)
+               // 若长时间陷于归中模式，可以适当放宽归中条件
+               || ((abs(gim_motor[PITCH]->measure.ecd - CENTER_ECD_PITCH) <= 200)
+               && (abs(gim_motor[YAW]->measure.ecd - CENTER_ECD_YAW) <= 200)
+               && (init_dt > INIT_TIMEOUT))
+               )
             {
                 gim_fdb.back_mode = BACK_IS_OK;
                 gim_fdb.yaw_offset_angle_total = ins_data.yaw_total_angle;/*云台抽风的原因，期望应该为总角度。抽风原因：不应该用ins_data.yaw*/

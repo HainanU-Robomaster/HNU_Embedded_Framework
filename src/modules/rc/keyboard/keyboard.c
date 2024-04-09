@@ -95,17 +95,17 @@ void PC_Handle_kb(void)
     if (rc_dbus_obj[0].kb.bit.SHIFT)
     {
         km.move_mode = FAST_MODE;
-        km.max_spd = 3500;
+        km.max_spd = 4000;
     }
     else if (rc_dbus_obj[0].kb.bit.CTRL)
     {
         km.move_mode = SLOW_MODE;
-        km.max_spd = 2500;
+        km.max_spd = 1000;
     }
     else
     {
         km.move_mode = NORMAL_MODE;
-        km.max_spd = 3000;
+        km.max_spd = 2000;
     }
 
     //add ramp
@@ -130,6 +130,22 @@ void PC_Handle_kb(void)
     VAL_LIMIT(km.vx, -km.max_spd, km.max_spd);
     VAL_LIMIT(km.vy, -km.max_spd, km.max_spd);
 
+//    if(rc_dbus_obj[0].kb.bit.SHIFT)
+//    {
+//        VAL_LIMIT(km.vx, -MAX_CHASSIS_VX_SPEED_HIGH, MAX_CHASSIS_VX_SPEED_HIGH);
+//        VAL_LIMIT(km.vy, -MAX_CHASSIS_VY_SPEED_HIGH, MAX_CHASSIS_VY_SPEED_HIGH);
+//    }
+//    else if(rc_dbus_obj[0].kb.bit.CTRL)
+//    {
+//        VAL_LIMIT(km.vx, -MAX_CHASSIS_VX_SPEED_LOW, MAX_CHASSIS_VX_SPEED_LOW);
+//        VAL_LIMIT(km.vy, -MAX_CHASSIS_VY_SPEED_LOW, MAX_CHASSIS_VY_SPEED_LOW);
+//    }
+//    else
+//    {
+//        VAL_LIMIT(km.vx, -MAX_CHASSIS_VX_SPEED, MAX_CHASSIS_VX_SPEED);
+//        VAL_LIMIT(km.vy, -MAX_CHASSIS_VY_SPEED, MAX_CHASSIS_VY_SPEED);
+//    }
+
     VAL_LIMIT(km.vx, -MAX_CHASSIS_VX_SPEED, MAX_CHASSIS_VX_SPEED);
     VAL_LIMIT(km.vy, -MAX_CHASSIS_VY_SPEED, MAX_CHASSIS_VY_SPEED);
 
@@ -137,4 +153,6 @@ void PC_Handle_kb(void)
     key_fsm(&km.rk_sta, rc_dbus_obj[0].mouse.r);
     key_fsm(&km.e_sta, rc_dbus_obj[0].kb.bit.E);
     key_fsm(&km.f_sta, rc_dbus_obj[0].kb.bit.F);
+    key_fsm(&km.shift_sta, rc_dbus_obj[0].kb.bit.SHIFT);
+    key_fsm(&km.ctrl_sta, rc_dbus_obj[0].kb.bit.CTRL);
 }

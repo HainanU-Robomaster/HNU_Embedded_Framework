@@ -130,6 +130,7 @@ struct shoot_fdb_msg
  { // 云台自瞄角度控制
      float yaw;
      float pitch;
+     rt_uint8_t heartbeat;
  };
 
 #endif /* _RM_TASK_H */

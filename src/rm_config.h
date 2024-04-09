@@ -58,7 +58,7 @@
 
 /* 鼠标键盘模式下的云台速度限制 */
 /* 云台pitch轴速度 */
-#define GIMBAL_PC_MOVE_RATIO_PIT 0.3f
+#define GIMBAL_PC_MOVE_RATIO_PIT 0.1f
 /* 云台yaw轴速度 */
 #define GIMBAL_PC_MOVE_RATIO_YAW 0.5f
 
@@ -86,17 +86,24 @@
 
 /******** 底盘最大速度设置 *******/
 /* 底盘移动最大速度，单位是毫米每秒 */
-#define MAX_CHASSIS_VX_SPEED 8000
-#define MAX_CHASSIS_VY_SPEED 8000
+#define MAX_CHASSIS_VX_SPEED 7000
+#define MAX_CHASSIS_VY_SPEED 7000
+
+#define MAX_CHASSIS_VX_SPEED_HIGH 11000
+#define MAX_CHASSIS_VY_SPEED_HIGH 11000
+
+#define MAX_CHASSIS_VX_SPEED_LOW 5000
+#define MAX_CHASSIS_VY_SPEED_LOW 5000
+
 /* 底盘旋转最大速度，单位是度每秒 */
 #define MAX_CHASSIS_VR_SPEED 8
 
 /* --------------------------------- 底盘PID参数 -------------------------------- */
 /* 电机速度环 */
 #define CHASSIS_KP_V_MOTOR              6
-#define CHASSIS_KI_V_MOTOR              15
-#define CHASSIS_KD_V_MOTOR              0
-#define CHASSIS_INTEGRAL_V_MOTOR        8000
+#define CHASSIS_KI_V_MOTOR              0
+#define CHASSIS_KD_V_MOTOR              0.0001
+#define CHASSIS_INTEGRAL_V_MOTOR        2000
 #define CHASSIS_MAX_V_MOTOR             16000
 // TODO: 参数待整定
 /* 跟随云台PID */
@@ -111,9 +118,9 @@
 #define PITCH_MOTOR_ID   0x208
 
 /*云台编码器归中*/
-#define GIMBAL_SIDEWAYS
+//#define GIMBAL_SIDEWAYS
 #ifdef GIMBAL_SIDEWAYS
-#define SIDEWAYS_ANGLE   0
+#define SIDEWAYS_ANGLE   36
 #define CENTER_ECD_YAW   3818         //云台yaw轴编码器归中值(侧身)
 #else
 #define CENTER_ECD_YAW   3818         //云台yaw轴编码器归中值
@@ -148,12 +155,12 @@
 #define YAW_MAX_A_IMU            25
 /* auto速度环 */
 #define YAW_KP_V_AUTO            5000
-#define YAW_KI_V_AUTO            0   // 200 300
+#define YAW_KI_V_AUTO            0
 #define YAW_KD_V_AUTO            0.5
 #define YAW_INTEGRAL_V_AUTO      0
 #define YAW_MAX_V_AUTO           30000
 /* auto角度环 */
-#define YAW_KP_A_AUTO            0.35f //0.35f
+#define YAW_KP_A_AUTO            0.35f
 #define YAW_KI_A_AUTO            0
 #define YAW_KD_A_AUTO            0.001f
 #define YAW_INTEGRAL_A_AUTO      0
@@ -166,20 +173,14 @@
 #define PITCH_KD_V_IMU           0.001
 #define PITCH_INTEGRAL_V_IMU     1500
 #define PITCH_MAX_V_IMU          30000
-/*
-#define PITCH_KP_V_IMU           4250
-#define PITCH_KI_V_IMU           1000
-#define PITCH_KD_V_IMU           3
-#define PITCH_INTEGRAL_V_IMU     1500
-#define PITCH_MAX_V_IMU          20000
-*/
 
 /* imu角度环 */
 #define PITCH_KP_A_IMU           0.35f
 #define PITCH_KI_A_IMU           0.0f
-#define PITCH_KD_A_IMU           0.001f
+#define PITCH_KD_A_IMU           0.0001f
 #define PITCH_INTEGRAL_A_IMU     0.0f
 #define PITCH_MAX_A_IMU          20
+
 /* auto速度环 */
 #define PITCH_KP_V_AUTO          8000
 #define PITCH_KI_V_AUTO          4000
@@ -204,33 +205,33 @@
 // TODO: 速度期望应改为变量应对速度切换。初次参数调整已完成
 /* 右摩擦轮M3508电机PID参数 */
 /* 速度环 */
-#define RIGHT_KP_V             20
-#define RIGHT_KI_V             4
-#define RIGHT_KD_V             0.002f
-#define RIGHT_INTEGRAL_V       0
+#define RIGHT_KP_V             23
+#define RIGHT_KI_V             0.1
+#define RIGHT_KD_V             0.001f
+#define RIGHT_INTEGRAL_V       50
 #define RIGHT_MAX_V            30000
 
 /* 左摩擦轮M3508电机PID参数 */
 /* 速度环 */
-#define LEFT_KP_V           20
-#define LEFT_KI_V           4
-#define LEFT_KD_V           0.002f
-#define LEFT_INTEGRAL_V     0
+#define LEFT_KP_V           23
+#define LEFT_KI_V           0.1
+#define LEFT_KD_V           0.001f
+#define LEFT_INTEGRAL_V     50
 #define LEFT_MAX_V          30000
 
 // TODO：PID参数初次微调已完成，期待后续微调
 /* 拨弹电机M2006电机PID参数 */
 /* 速度环 */
 #define TRIGGER_KP_V           10
-#define TRIGGER_KI_V           0
+#define TRIGGER_KI_V           5
 #define TRIGGER_KD_V           0.01f
 #define TRIGGER_INTEGRAL_V     1500
 #define TRIGGER_MAX_V          20000
 /* 角度环 */
 #define TRIGGER_KP_A           20
-#define TRIGGER_KI_A           2
+#define TRIGGER_KI_A           0.1
 #define TRIGGER_KD_A           0
-#define TRIGGER_INTEGRAL_A     10
-#define TRIGGER_MAX_A          5000
+#define TRIGGER_INTEGRAL_A     2
+#define TRIGGER_MAX_A          500
 
 #endif /* _RM_CONFIG_H */
