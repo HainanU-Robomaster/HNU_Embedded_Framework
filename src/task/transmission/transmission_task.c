@@ -11,7 +11,7 @@
 #define DBG_TAG   "rm.task"
 #define DBG_LVL DBG_INFO
 #include <rtdbg.h>
-
+#define HEARTBEAT 500 //ms
 /* -------------------------------- 线程间通讯话题相关 ------------------------------- */
 static struct gimbal_cmd_msg gim_cmd;
 static struct ins_msg ins_data;
@@ -33,6 +33,7 @@ RpyTypeDef rpy_tx_data={
         .AC = 0,
 };
 RpyTypeDef rpy_rx_data; //接收解析结构体
+static rt_uint32_t heart_dt;
 /* ---------------------------------usb虚拟串口数据相关 --------------------------------- */
 static rt_device_t vs_port = RT_NULL;
 /* -------------------------------- 线程间通讯话题相关 ------------------------------- */
@@ -88,6 +89,7 @@ static float trans_dt;
 void transmission_task_entry(void* argument)
 {
     static float trans_start;
+    static float heart_start;
 
     /*订阅数据初始化*/
     trans_sub_init();
@@ -95,7 +97,7 @@ void transmission_task_entry(void* argument)
     trans_pub_init();
     /* step1：查找名为 "vcom" 的虚拟串口设备*/
     vs_port = rt_device_find("vcom");
-    /* step4：打开串口设备。以中断接收及轮询发送模式打开串口设备*/
+    /* step2：打开串口设备。以中断接收及轮询发送模式打开串口设备*/
     if (vs_port)
         rt_device_open(vs_port, RT_DEVICE_FLAG_INT_RX);
     /*环形缓冲区初始化*/
@@ -113,13 +115,11 @@ void transmission_task_entry(void* argument)
         /* 发布数据更新 */
         trans_pub_push();
 /*--------------------------------------------------具体需要发送的数据--------------------------------- */
+        if((dwt_get_time_ms()-heart_dt)>=HEARTBEAT)
+        {
+            rt_device_control(vs_port, RT_DEVICE_CTRL_RESUME, (void *) RT_DEVICE_FLAG_INT_TX);
+        }
         Send_to_pc(rpy_tx_data);
-        //Getdata();
-//        if (gim_cmd.ctrl_mode==GIMBAL_RELAX||gim_cmd.ctrl_mode==GIMBAL_GYRO)
-//        {
-//           trans_fdb.yaw=0;
-//           trans_fdb.pitch=0;
-//        }
 /*--------------------------------------------------具体需要发送的数据---------------------------------*/
         /* 用于调试监测线程调度使用 */
         trans_dt = dwt_get_time_ms() - trans_start;
@@ -218,6 +218,10 @@ static rt_err_t usb_input(rt_device_t dev, rt_size_t size)
                     trans_fdb.yaw =  (*(int32_t *) &rpy_rx_data.DATA[1] / 1000.0);
                     trans_fdb.pitch = -(*(int32_t *) &rpy_rx_data.DATA[5] / 1000.0);
                 }
+            }break;
+            case HEARTBEAT:{
+                trans_fdb.heartbeat = (*(uint8_t *) &rpy_rx_data.DATA[0]);
+                heart_dt=dwt_get_time_ms();
             }break;
         }
         memset(&rpy_rx_data, 0, sizeof(rpy_rx_data));

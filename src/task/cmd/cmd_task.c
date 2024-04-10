@@ -51,6 +51,7 @@ extern ext_power_heat_data_t power_heat_data_t;
 /*案件状态标志位*/
 static int key_e_status=-1;
 static int key_f_status=-1;
+static int key_q_status=-1;
 /*判断上位机角度是否更新数值*/
 static gim_auto_judge yaw_auto;
 static gim_auto_judge pitch_auto;
@@ -426,7 +427,7 @@ static void remote_to_cmd_pc_controler(void)
             trans_fdb.yaw=0;
             trans_fdb.pitch=0;
         }
-        mouse_accumulate_x+=fx * KB_RATIO * GIMBAL_PC_MOVE_RATIO_YAW;
+//        mouse_accumulate_x+=fx * KB_RATIO * GIMBAL_PC_MOVE_RATIO_YAW;
         mouse_accumulate_y-=fy * KB_RATIO * GIMBAL_PC_MOVE_RATIO_PIT;
         gim_cmd.yaw = trans_fdb.yaw+gyro_yaw_inherit + mouse_accumulate_x/* + 150 * rc_now->ch3 * RC_RATIO * GIMBAL_RC_MOVE_RATIO_YAW*/;//上位机自瞄
         gim_cmd.pitch = trans_fdb.pitch+gyro_pitch_inherit + mouse_accumulate_y/* +100 * rc_now->ch4 * RC_RATIO * GIMBAL_RC_MOVE_RATIO_PIT */;//上位机自瞄
@@ -519,7 +520,7 @@ static void remote_to_cmd_pc_controler(void)
     }
     if (chassis_cmd.ctrl_mode==CHASSIS_SPIN)
     {
-        chassis_cmd.vw=2+2*robot_status.chassis_power_limit/60;
+        chassis_cmd.vw=4.5+2*robot_status.chassis_power_limit/60;
     }
     /*TODO:--------------------------------------------------发射模块状态机--------------------------------------------------------------*/
     /*-----------------------------------------开关摩擦轮--------------------------------------------*/
@@ -549,14 +550,33 @@ static void remote_to_cmd_pc_controler(void)
     if((rc_now->mouse.l==1||rc_now->wheel>=200)&&shoot_cmd.friction_status==1&&(power_heat_data_t.shooter_id1_17mm_cooling_heat < (robot_status.shooter_barrel_heat_limit-10)))
     {
         shoot_cmd.ctrl_mode=SHOOT_COUNTINUE;
-        shoot_cmd.shoot_freq=3000;
+        shoot_cmd.shoot_freq=4500;
+
+        if(((int16_t)robot_status.shooter_barrel_heat_limit-(int16_t)power_heat_data_t.shooter_id1_17mm_cooling_heat)<=30)
+        {
+            shoot_cmd.shoot_freq=0;
+        }
+
+        if (km.shift_sta==KEY_PRESS_LONG)
+        {
+            shoot_cmd.shoot_freq=4500;
+        }
+
+        if(robot_status.shooter_barrel_heat_limit==0)
+        {
+            shoot_cmd.shoot_freq=2500;
+        }
+        else
+        {
+
+        }
+
     }
     else
     {
         shoot_cmd.ctrl_mode=SHOOT_COUNTINUE;
         shoot_cmd.shoot_freq=0;
     }
-
     /*-------------------------------------------------------------堵弹反转检测------------------------------------------------------------*/
     if (shoot_fdb.trigger_motor_current>=9500||reverse_cnt!=0)
     {
