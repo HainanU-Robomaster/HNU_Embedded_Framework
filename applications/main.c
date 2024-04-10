@@ -27,6 +27,7 @@ int main(void)
     rt_pin_mode(LED_B_PIN, PIN_MODE_OUTPUT);
     rt_pin_mode(GET_PIN(C, 8), PIN_MODE_OUTPUT);
     dwt_init(CPU_FREQUENCY);
+    rt_pin_write(GET_PIN(C, 8), PIN_HIGH);
 
     while (count++)
     {
@@ -34,8 +35,6 @@ int main(void)
         rt_thread_mdelay(500);
         rt_pin_write(LED_B_PIN, PIN_LOW);
         rt_thread_mdelay(500);
-        rt_pin_write(GET_PIN(C, 8), PIN_HIGH);
-        rt_thread_mdelay(1);
     }
 
     return RT_EOK;

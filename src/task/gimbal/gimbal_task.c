@@ -139,13 +139,13 @@ void gimbal_thread_entry(void *argument)
 
             gim_motor_ref[YAW] = yaw_motor_relive * ( 1 - yaw_ramp->calc(yaw_ramp));
             gim_motor_ref[PITCH] = pitch_motor_relive* ( 1 - pit_ramp->calc(pit_ramp));
+
             if((abs(gim_motor[PITCH]->measure.ecd - CENTER_ECD_PITCH) <= 20)
                && (abs(gim_motor[YAW]->measure.ecd - CENTER_ECD_YAW) <= 80)
                // 若长时间陷于归中模式，可以适当放宽归中条件
                || ((abs(gim_motor[PITCH]->measure.ecd - CENTER_ECD_PITCH) <= 200)
-               && (abs(gim_motor[YAW]->measure.ecd - CENTER_ECD_YAW) <= 200)
-               && (init_dt > INIT_TIMEOUT))
-               )
+                   && (abs(gim_motor[YAW]->measure.ecd - CENTER_ECD_YAW) <= 200)
+                   && (init_dt > INIT_TIMEOUT)))
             {
                 gim_fdb.back_mode = BACK_IS_OK;
                 gim_fdb.yaw_offset_angle_total = ins_data.yaw_total_angle;/*云台抽风的原因，期望应该为总角度。抽风原因：不应该用ins_data.yaw*/
