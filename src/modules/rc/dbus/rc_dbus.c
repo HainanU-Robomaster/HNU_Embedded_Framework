@@ -93,6 +93,9 @@ rt_err_t dbus_rc_decode(uint8_t *buff)
 static void rc_lost_callback(void *paramete)
 {
     LOG_W("Dbus RC lost!");
+    rt_memset(&rc_dbus_obj[NOW], 0, sizeof(rc_dbus_obj[NOW]));
+    rc_dbus_obj[NOW].sw1 = 1;
+    rc_dbus_obj[NOW].sw2 = 1;
 }
 
 /**
