@@ -130,12 +130,13 @@ struct shoot_fdb_msg
  { // 云台自瞄角度控制
      float yaw;
      float pitch;
-     float liner_x;
-     float liner_y;
-     float liner_z;
-     float angler_x;
-     float angler_y;
-     float angler_z;
+     float linear_x;
+     float linear_y;
+     float linear_z;
+     float angular_x;
+     float angular_y;
+     float angular_z;
+     rt_uint8_t heartbeat;
  };
 
 #endif /* _RM_TASK_H */
