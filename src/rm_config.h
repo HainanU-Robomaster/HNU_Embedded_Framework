@@ -75,8 +75,7 @@
 /* 底盘轮子周长(mm) */
 #define WHEEL_PERIMETER   471
 
-#define LENGTH_A 250 //底盘长的一半(mm)
-#define LENGTH_B 250 //底盘宽的一半(mm)
+#define LENGTH_RADIUS 230 //底盘的半径(mm)
 
 /******** 底盘电机使用3508 *******/
 /* 3508底盘电机减速比 */
