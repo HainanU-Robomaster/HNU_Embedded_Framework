@@ -1,8 +1,8 @@
- /*
- * Change Logs:
- * Date            Author          Notes
- * 2023-08-23      ChuShicheng     first version
- */
+/*
+* Change Logs:
+* Date            Author          Notes
+* 2023-08-23      ChuShicheng     first version
+*/
 #ifndef _RM_CONFIG_H
 #define _RM_CONFIG_H
 
@@ -73,10 +73,10 @@
 /* 底盘轴距(mm) */
 #define WHEELBASE         388
 /* 底盘轮子周长(mm) */
-#define WHEEL_PERIMETER   481
+#define WHEEL_PERIMETER   471
 
-#define LENGTH_A 170 //底盘长的一半(mm)
-#define LENGTH_B 170 //底盘宽的一半(mm)
+#define LENGTH_A 250 //底盘长的一半(mm)
+#define LENGTH_B 250 //底盘宽的一半(mm)
 
 /******** 底盘电机使用3508 *******/
 /* 3508底盘电机减速比 */
@@ -100,10 +100,10 @@
 #define CHASSIS_MAX_V_MOTOR             16000
 // TODO: 参数待整定
 /* 跟随云台PID */
-#define CHASSIS_KP_V_FOLLOW             0.3
+#define CHASSIS_KP_V_FOLLOW             0.055f
 #define CHASSIS_KI_V_FOLLOW             0
-#define CHASSIS_KD_V_FOLLOW             0
-#define CHASSIS_INTEGRAL_V_FOLLOW       300
+#define CHASSIS_KD_V_FOLLOW             0.000001f
+#define CHASSIS_INTEGRAL_V_FOLLOW       0
 #define CHASSIS_MAX_V_FOLLOW            1500
 
 /* ---------------------------------- 云台相关 ---------------------------------- */
@@ -121,40 +121,40 @@
 /* 云台控制周期 (ms) */
 #define GIMBAL_PERIOD 1
 /* 云台回中初始化时间 (ms) */
-#define BACK_CENTER_TIME 1000
+#define BACK_CENTER_TIME 10
 
 /* -------------------------------- 云台电机PID参数 ------------------------------- */
 /* 云台yaw轴电机PID参数 */
 /* imu速度环 */
-#define YAW_KP_V_IMU             5000
-#define YAW_KI_V_IMU             200
-#define YAW_KD_V_IMU             10
-#define YAW_INTEGRAL_V_IMU       1000
+#define YAW_KP_V_IMU             8000
+#define YAW_KI_V_IMU             0
+#define YAW_KD_V_IMU             1
+#define YAW_INTEGRAL_V_IMU       0
 #define YAW_MAX_V_IMU            30000
 /* imu角度环 */
-#define YAW_KP_A_IMU             0.35f
+#define YAW_KP_A_IMU             0.2
 #define YAW_KI_A_IMU             0
-#define YAW_KD_A_IMU             0.001f
-#define YAW_INTEGRAL_A_IMU       5
+#define YAW_KD_A_IMU             0.0036f
+#define YAW_INTEGRAL_A_IMU       0
 #define YAW_MAX_A_IMU            25
 /* auto速度环 */
-#define YAW_KP_V_AUTO            5200+400  //5000
-#define YAW_KI_V_AUTO            200   // 200 300
-#define YAW_KD_V_AUTO            10
-#define YAW_INTEGRAL_V_AUTO      1000
+#define YAW_KP_V_AUTO            8000  //5000
+#define YAW_KI_V_AUTO            0   // 200 300
+#define YAW_KD_V_AUTO            1
+#define YAW_INTEGRAL_V_AUTO      0
 #define YAW_MAX_V_AUTO           30000
 /* auto角度环 */
-#define YAW_KP_A_AUTO            0.39f //0.35f
+#define YAW_KP_A_AUTO            0.2f //0.35f
 #define YAW_KI_A_AUTO            0
-#define YAW_KD_A_AUTO            0.001f
-#define YAW_INTEGRAL_A_AUTO      5
+#define YAW_KD_A_AUTO            0.0036f
+#define YAW_INTEGRAL_A_AUTO      0
 #define YAW_MAX_A_AUTO           25
 
 /* 云台PITCH轴电机PID参数 */
 /* imu速度环 */
-#define PITCH_KP_V_IMU           5100
-#define PITCH_KI_V_IMU           1600
-#define PITCH_KD_V_IMU           1
+#define PITCH_KP_V_IMU           8000
+#define PITCH_KI_V_IMU           0
+#define PITCH_KD_V_IMU           0.01
 #define PITCH_INTEGRAL_V_IMU     1500
 #define PITCH_MAX_V_IMU          20000
 /*
@@ -166,21 +166,21 @@
 */
 
 /* imu角度环 */
-#define PITCH_KP_A_IMU           0.5f
+#define PITCH_KP_A_IMU           0.58f
 #define PITCH_KI_A_IMU           0.0f
-#define PITCH_KD_A_IMU           0.005f
-#define PITCH_INTEGRAL_A_IMU     0.2f
+#define PITCH_KD_A_IMU           0.0005f
+#define PITCH_INTEGRAL_A_IMU     0.0f
 #define PITCH_MAX_A_IMU          20
 /* auto速度环 */
-#define PITCH_KP_V_AUTO          5200+400+150  // 4250
-#define PITCH_KI_V_AUTO          200  //1000 300
-#define PITCH_KD_V_AUTO          3
+#define PITCH_KP_V_AUTO          8000  // 4250
+#define PITCH_KI_V_AUTO          0  //1000 300
+#define PITCH_KD_V_AUTO          0.01
 #define PITCH_INTEGRAL_V_AUTO    1500
 #define PITCH_MAX_V_AUTO         20000
 /* auto角度环 */
-#define PITCH_KP_A_AUTO          0.39f  // 0.5f 0.38f 0.39
+#define PITCH_KP_A_AUTO          0.58f  // 0.5f 0.38f 0.39
 #define PITCH_KI_A_AUTO          0.0f
-#define PITCH_KD_A_AUTO          0.005f
+#define PITCH_KD_A_AUTO          0.0005f
 #define PITCH_INTEGRAL_A_AUTO    0.2f
 #define PITCH_MAX_A_AUTO         20
 
@@ -195,18 +195,18 @@
 // TODO: 速度期望应改为变量应对速度切换。初次参数调整已完成
 /* 右摩擦轮M3508电机PID参数 */
 /* 速度环 */
-#define RIGHT_KP_V             18
-#define RIGHT_KI_V             2
-#define RIGHT_KD_V             0.02f
-#define RIGHT_INTEGRAL_V       2000
+#define RIGHT_KP_V             23
+#define RIGHT_KI_V             0.1
+#define RIGHT_KD_V             0.001f
+#define RIGHT_INTEGRAL_V       50
 #define RIGHT_MAX_V            30000
 
 /* 左摩擦轮M3508电机PID参数 */
 /* 速度环 */
-#define LEFT_KP_V           18
-#define LEFT_KI_V           2
-#define LEFT_KD_V           0.02f
-#define LEFT_INTEGRAL_V     2000
+#define LEFT_KP_V           23
+#define LEFT_KI_V           0.1
+#define LEFT_KD_V           0.001f
+#define LEFT_INTEGRAL_V     50
 #define LEFT_MAX_V          30000
 
 // TODO：PID参数初次微调已完成，期待后续微调
@@ -215,13 +215,13 @@
 #define TRIGGER_KP_V           10
 #define TRIGGER_KI_V           5
 #define TRIGGER_KD_V           0.01f
-#define TRIGGER_INTEGRAL_V     1500
+#define TRIGGER_INTEGRAL_V     1000
 #define TRIGGER_MAX_V          20000
 /* 角度环 */
 #define TRIGGER_KP_A           20
-#define TRIGGER_KI_A           2
+#define TRIGGER_KI_A           0.1
 #define TRIGGER_KD_A           0
-#define TRIGGER_INTEGRAL_A     10
-#define TRIGGER_MAX_A          5000
+#define TRIGGER_INTEGRAL_A     2
+#define TRIGGER_MAX_A          500
 
 #endif /* _RM_CONFIG_H */
