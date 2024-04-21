@@ -112,6 +112,16 @@ struct gimbal_fdb_msg
     float yaw_relative_angle;  //云台相对于初始位置的yaw轴角度
 };
 
+/* ------------------------------ chassis反馈状态数据 ------------------------------ */
+/**
+ * @brief 底盘真实反馈状态数据,由chassis发布
+ */
+ struct chassis_fdb_msg
+ {
+     float x_pos_gim;
+     float y_pos_gim;
+ };
+
 /* ------------------------------ shoot反馈状态数据 ------------------------------ */
 /**
  * @brief 发射机真实反馈状态数据,由shoot发布
@@ -130,12 +140,13 @@ struct shoot_fdb_msg
  { // 云台自瞄角度控制
      float yaw;
      float pitch;
-     float liner_x;
-     float liner_y;
-     float liner_z;
-     float angler_x;
-     float angler_y;
-     float angler_z;
+     float linear_x;
+     float linear_y;
+     float linear_z;
+     float angular_x;
+     float angular_y;
+     float angular_z;
+     rt_uint8_t heartbeat;
  };
 
 #endif /* _RM_TASK_H */

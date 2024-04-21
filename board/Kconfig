@@ -432,7 +432,12 @@ menu "RoboMaster Robot Types"
         select BSP_USING_INS_TASK
         select BSP_USING_MOTOR_TASK
         select BSP_USING_CMD_TASK
-
+    config WHEEL_OMNI_INFANTRY
+         bool "Select Wheel OMNI Infantry"
+         default y
+    config WHEEL_OMNI_SENTRY
+         bool "Select Wheel OMNI SENTRY"
+         default n
 endmenu
 
 menu "Board extended module Drivers"
