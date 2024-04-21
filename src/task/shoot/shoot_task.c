@@ -226,8 +226,8 @@ void shoot_task_entry(void* argument)
         /*开关摩擦轮*/
         if (shoot_cmd.friction_status==1)
         {
-            shoot_motor_ref[RIGHT_FRICTION] =-5000;//摩擦轮常转
-            shoot_motor_ref[LEFT_FRICTION] = 5000;
+            shoot_motor_ref[RIGHT_FRICTION] =-6800;//摩擦轮常转
+            shoot_motor_ref[LEFT_FRICTION] = 6800;
             /*从自动连发模式切换三连发及单发模式时，要继承总转子角度*/
         }
         else
