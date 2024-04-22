@@ -1,6 +1,3 @@
-//
-// Created by turboDog on 2021/11/21.
-//
 
 #ifndef RTTHREAD_RAMP_H
 #define RTTHREAD_RAMP_H
@@ -11,7 +8,7 @@
 
 typedef struct ramp_obj_t ramp_obj_t;
 
-struct ramp_obj_t
+struct ramp_obj_t // 斜坡控制结构体
 {
     int32_t count;  // 计数器
     int32_t scale;  // 控制数据变化斜率
