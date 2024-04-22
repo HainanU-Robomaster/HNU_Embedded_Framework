@@ -123,7 +123,7 @@
 #define SIDEWAYS_ANGLE   36
 #define CENTER_ECD_YAW   3818         //云台yaw轴编码器归中值(侧身)
 #else
-#define CENTER_ECD_YAW   3818         //云台yaw轴编码器归中值
+#define CENTER_ECD_YAW   7913         //云台yaw轴编码器归中值
 #define SIDEWAYS_ANGLE   0
 #endif
 
@@ -228,10 +228,10 @@
 #define TRIGGER_INTEGRAL_V     1500
 #define TRIGGER_MAX_V          20000
 /* 角度环 */
-#define TRIGGER_KP_A           20
-#define TRIGGER_KI_A           0.1
+#define TRIGGER_KP_A           5
+#define TRIGGER_KI_A           0
 #define TRIGGER_KD_A           0
-#define TRIGGER_INTEGRAL_A     2
-#define TRIGGER_MAX_A          500
+#define TRIGGER_INTEGRAL_A     0
+#define TRIGGER_MAX_A          10000
 
 #endif /* _RM_CONFIG_H */

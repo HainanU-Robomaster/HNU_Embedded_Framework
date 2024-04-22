@@ -16,7 +16,7 @@
 #include <rtdbg.h>
 
 static publisher_t *pub_gim, *pub_chassis, *pub_shoot;
-static subscriber_t *sub_gim, *sub_shoot,*sub_trans,*sub_ins;
+static subscriber_t *sub_gim, *sub_shoot,*sub_trans,*sub_ins,*sub_referee;
 static struct gimbal_cmd_msg gim_cmd;
 static struct gimbal_fdb_msg gim_fdb;
 static struct shoot_cmd_msg  shoot_cmd;
@@ -24,6 +24,7 @@ static struct shoot_fdb_msg  shoot_fdb;
 static struct chassis_cmd_msg chassis_cmd;
 static struct trans_fdb_msg  trans_fdb;
 static struct ins_msg ins_data;
+static struct referee_fdb_msg referee_fdb;
 
 static rc_dbus_obj_t *rc_now, *rc_last;
 
@@ -46,20 +47,18 @@ static float gyro_pitch_inherit;
 /*用于清除环形缓冲区buffer的指针*/
 extern rt_uint8_t *r_buffer_point;
 /*----------------------------------裁判系统数据接收/比赛状态-------------------------------------*/
-extern robot_status_t robot_status;
-extern ext_power_heat_data_t power_heat_data_t;
+//extern robot_status_t robot_status;
+//extern ext_power_heat_data_t power_heat_data_t;
 /*案件状态标志位*/
 static int key_e_status=-1;
 static int key_f_status=-1;
 static int key_q_status=-1;
-/*判断上位机角度是否更新数值*/
-static gim_auto_judge yaw_auto;
-static gim_auto_judge pitch_auto;
+static int key_v_status=-1;
 
 /* ------------------------------- 遥控数据转换为控制指令 ------------------------------ */
 static void remote_to_cmd_dbus(void);
-static void remote_to_cmd_sbus(void);
-static void remote_to_cmd_pc_controler(void);
+/*大疆DT7遥控器的控制链路接口，包涵键盘控制驱动*/
+static void remote_to_cmd_pc_DT7(void);
 //TODO: 添加图传链路的自定义控制器控制方式和键鼠控制方式
 /*键盘加速度的斜坡*/
 ramp_obj_t *km_vx_ramp;//x轴控制斜坡
@@ -85,6 +84,7 @@ void cmd_thread_entry(void *argument)
     /* 初始化拨杆为上位 */
     rc_now->sw1 = RC_UP;
     rc_now->sw2 = RC_UP;
+    /* 键盘控制急停斜坡的注册*/
     km_vx_ramp = ramp_register(100, 2500000);
     km_vy_ramp = ramp_register(100, 2500000);
     LOG_I("Cmd Task Start");
@@ -98,7 +98,7 @@ void cmd_thread_entry(void *argument)
 
         #ifdef BSP_USING_RC_KEYBOARD
         PC_Handle_kb();//处理PC端键鼠控制
-        remote_to_cmd_pc_controler();
+        remote_to_cmd_pc_DT7();
         #endif
         /* 将遥控器原始数据转换为控制指令 */
         #ifdef BSP_USING_RC_DBUS
@@ -152,6 +152,7 @@ static void cmd_sub_init(void)
     sub_shoot= sub_register("shoot_fdb", sizeof(struct shoot_fdb_msg));
     sub_trans= sub_register("trans_fdb", sizeof(struct trans_fdb_msg));
     sub_ins = sub_register("ins_msg", sizeof(struct ins_msg));
+    sub_referee= sub_register("referee_fdb",sizeof(struct referee_fdb_msg));
 }
 
 
@@ -164,6 +165,7 @@ static void cmd_sub_pull(void)
     sub_get_msg(sub_shoot, &shoot_fdb);
     sub_get_msg(sub_trans,&trans_fdb);
     sub_get_msg(sub_ins, &ins_data);
+    sub_get_msg(sub_referee, &referee_fdb);
 }
 
 /* ------------------------------ 将遥控器数据转换为控制指令 ----------------------------- */
@@ -378,7 +380,7 @@ static void remote_to_cmd_sbus(void)
 #endif
 
 #ifdef BSP_USING_RC_KEYBOARD
-static void remote_to_cmd_pc_controler(void)
+static void remote_to_cmd_pc_DT7(void)
 {
     /* 保存上一次数据 */
     gim_cmd.last_mode = gim_cmd.ctrl_mode;
@@ -399,15 +401,6 @@ static void remote_to_cmd_pc_controler(void)
 
     chassis_cmd.offset_angle = gim_fdb.yaw_relative_angle;
 
-#ifdef  REFEREE_SYSTEM_ON
-
-    if (power_heat_data_t.chassis_power>=(float)robot_status.chassis_power_limit)
-    {
-        chassis_cmd.vx=chassis_cmd.vx*(1-(power_heat_data_t.chassis_power-(float)robot_status.chassis_power_limit)/(float)robot_status.chassis_power_limit);
-        chassis_cmd.vy=chassis_cmd.vy*(1-(power_heat_data_t.chassis_power-(float)robot_status.chassis_power_limit)/(float)robot_status.chassis_power_limit);
-        chassis_cmd.vw=chassis_cmd.vw*(1-(power_heat_data_t.chassis_power-(float)robot_status.chassis_power_limit)/(float)robot_status.chassis_power_limit);
-    }
-#endif
     /*云台命令*/
     if (gim_cmd.ctrl_mode==GIMBAL_GYRO)
     {
@@ -418,7 +411,6 @@ static void remote_to_cmd_pc_controler(void)
         gyro_pitch_inherit =gim_cmd.pitch;
         mouse_accumulate_x=0;
         mouse_accumulate_y=0;
-        //auto_relative_angle_status=RELATIVE_ANGLE_TRANS;
     }
     if (gim_cmd.ctrl_mode==GIMBAL_AUTO)
     {
@@ -427,13 +419,13 @@ static void remote_to_cmd_pc_controler(void)
             trans_fdb.yaw=0;
             trans_fdb.pitch=0;
         }
-//        mouse_accumulate_x+=fx * KB_RATIO * GIMBAL_PC_MOVE_RATIO_YAW;
+         //mouse_accumulate_x+=fx * KB_RATIO * GIMBAL_PC_MOVE_RATIO_YAW; /*鼠标x轴的自瞄补偿，测试结果建议注释掉暂不使用*/
         mouse_accumulate_y-=fy * KB_RATIO * GIMBAL_PC_MOVE_RATIO_PIT;
         gim_cmd.yaw = trans_fdb.yaw+gyro_yaw_inherit + mouse_accumulate_x/* + 150 * rc_now->ch3 * RC_RATIO * GIMBAL_RC_MOVE_RATIO_YAW*/;//上位机自瞄
         gim_cmd.pitch = trans_fdb.pitch+gyro_pitch_inherit + mouse_accumulate_y/* +100 * rc_now->ch4 * RC_RATIO * GIMBAL_RC_MOVE_RATIO_PIT */;//上位机自瞄
     }
-    /* 限制云台角度 */
 
+      /*!限制云台pitch轴角度 */
     VAL_LIMIT(gim_cmd.pitch, PIT_ANGLE_MIN, PIT_ANGLE_MAX);
     /*开环状态和遥控器归中*/
     if (gim_cmd.ctrl_mode==GIMBAL_INIT||gim_cmd.ctrl_mode==GIMBAL_RELAX)
@@ -445,18 +437,20 @@ static void remote_to_cmd_pc_controler(void)
 
 
     /*TODO:手动模式和自瞄模式状态机*/
-    if (rc_now->mouse.r==0) {
+    /*!如果鼠标未按下右键*/
+    if (rc_now->mouse.r==0)
+    {
         if (gim_cmd.last_mode == GIMBAL_RELAX)
         {/* 判断上次状态是否为RELAX，是则先归中 */
             gim_cmd.ctrl_mode = GIMBAL_INIT;
             chassis_cmd.ctrl_mode=CHASSIS_RELAX;
         }
-        else {
-            if (gim_fdb.back_mode == BACK_IS_OK)
+        else
+        {
+            if (gim_fdb.back_mode == BACK_IS_OK)  /*!是否归中完成*/
             {
                 gim_cmd.ctrl_mode = GIMBAL_GYRO;
                 chassis_cmd.ctrl_mode = CHASSIS_FOLLOW_GIMBAL;
-                shoot_cmd.ctrl_mode=SHOOT_COUNTINUE;
                 memset(r_buffer_point,0,sizeof (*r_buffer_point));
             }
             else if(gim_fdb.back_mode==BACK_STEP)
@@ -467,9 +461,8 @@ static void remote_to_cmd_pc_controler(void)
         }
     }
 
-    if (rc_now->mouse.r==1||rc_now->sw2==RC_DN)
+    if (rc_now->mouse.r==1||rc_now->sw2==RC_DN) /*!如果鼠标按下右键或者遥控器选择自瞄模式*/
     {
-
         if (gim_cmd.last_mode == GIMBAL_RELAX)
         {/* 判断上次状态是否为RELAX，是则先归中 */
             gim_cmd.ctrl_mode = GIMBAL_INIT;
@@ -481,7 +474,6 @@ static void remote_to_cmd_pc_controler(void)
             {/* 判断归中是否完成 */
                 gim_cmd.ctrl_mode = GIMBAL_AUTO;
                 chassis_cmd.ctrl_mode = CHASSIS_FOLLOW_GIMBAL;
-                shoot_cmd.ctrl_mode=SHOOT_COUNTINUE;
             }
             else if(gim_fdb.back_mode==BACK_STEP)
             {
@@ -492,16 +484,7 @@ static void remote_to_cmd_pc_controler(void)
     }
 
    /*TODO:小陀螺*/
-    /*if(rc_now->kb.bit.E&&key_e_status==0)
-    {
-        key_e_status=1;
-        rt_thread_mdelay(120);
-    }
-    else if(rc_now->kb.bit.E&&key_e_status==1)
-    {
-        key_e_status=0;
-        rt_thread_mdelay(120);
-    }*/
+
     if(km.e_sta==KEY_PRESS_ONCE)
     {
         key_e_status=-key_e_status;
@@ -520,20 +503,11 @@ static void remote_to_cmd_pc_controler(void)
     }
     if (chassis_cmd.ctrl_mode==CHASSIS_SPIN)
     {
-        chassis_cmd.vw=4.5+2*robot_status.chassis_power_limit/60;
+        chassis_cmd.vw=4.5+2*referee_fdb.robot_status.chassis_power_limit/60;/*!小陀螺转速，随着功率限制提升加快转速*/
     }
     /*TODO:--------------------------------------------------发射模块状态机--------------------------------------------------------------*/
-    /*-----------------------------------------开关摩擦轮--------------------------------------------*/
-   /* if(rc_now->kb.bit.F&&key_f_status==0)
-    {
-        key_f_status=1;
-        rt_thread_mdelay(120);
-    }
-    else if(rc_now->kb.bit.F&&key_f_status==1)
-    {
-        key_f_status=0;
-        rt_thread_mdelay(120);
-    }*/
+    /*!-----------------------------------------开关摩擦轮--------------------------------------------*/
+
     if(km.f_sta==KEY_PRESS_ONCE)
     {
         key_f_status=-key_f_status;
@@ -546,39 +520,69 @@ static void remote_to_cmd_pc_controler(void)
     {
         shoot_cmd.friction_status=0;
     }
-    /*TODO:------------------------------------------------------------扳机连发模式---------------------------------------------------------*/
-    if((rc_now->mouse.l==1||rc_now->wheel>=200)&&shoot_cmd.friction_status==1&&(power_heat_data_t.shooter_id1_17mm_cooling_heat < (robot_status.shooter_barrel_heat_limit-10)))
+    /*!------------------------------------------------------------扳机连发模式---------------------------------------------------------*/
+    if (km.v_sta==KEY_PRESS_ONCE)
+    {
+        key_v_status=-key_v_status;
+    }
+    if (key_v_status==-1)
     {
         shoot_cmd.ctrl_mode=SHOOT_COUNTINUE;
-        shoot_cmd.shoot_freq=4500;
-
-        if(((int16_t)robot_status.shooter_barrel_heat_limit-(int16_t)power_heat_data_t.shooter_id1_17mm_cooling_heat)<=30)
-        {
-            shoot_cmd.shoot_freq=0;
-        }
-
-        if (km.shift_sta==KEY_PRESS_LONG)
-        {
-            shoot_cmd.shoot_freq=4500;
-        }
-
-        if(robot_status.shooter_barrel_heat_limit==0)
-        {
-            shoot_cmd.shoot_freq=2500;
-        }
-        else
-        {
-
-        }
-
     }
     else
     {
-        shoot_cmd.ctrl_mode=SHOOT_COUNTINUE;
-        shoot_cmd.shoot_freq=0;
+        shoot_cmd.ctrl_mode=SHOOT_ONE;
+    }
+    switch (shoot_cmd.ctrl_mode)
+    {
+        case SHOOT_ONE:
+            if (rc_now->mouse.l==1&&shoot_cmd.friction_status==1)
+            {
+                if (shoot_fdb.trigger_status==SHOOT_WAITING&&trigger_flag==0)
+                {
+                    shoot_cmd.trigger_status=TRIGGER_ON;
+                    trigger_flag=1;
+                }
+                else if(shoot_fdb.trigger_status==SHOOT_OK)
+                {
+                    shoot_cmd.trigger_status=TRIGGER_ING;
+                }
+
+            }
+            else
+            {
+                shoot_cmd.trigger_status=TRIGGER_OFF;
+            }
+            if (rc_now->mouse.l==0)
+            {
+                trigger_flag=0;
+            }
+
+            break;
+
+        case SHOOT_COUNTINUE:
+            if((rc_now->mouse.l==1||rc_now->wheel>=200)&&shoot_cmd.friction_status==1&&(referee_fdb.power_heat_data.shooter_id1_17mm_cooling_heat < (referee_fdb.robot_status.shooter_barrel_heat_limit-10)))
+            {
+                shoot_cmd.shoot_freq=4500;
+                /*!扳机连发功率限制如果未挂载功率限制，发射频率置为一个合适速度*/
+                if(((int16_t)referee_fdb.robot_status.shooter_barrel_heat_limit-(int16_t)referee_fdb.power_heat_data.shooter_id1_17mm_cooling_heat)<=30)
+                {
+                    shoot_cmd.shoot_freq=0;
+                }
+                if(referee_fdb.robot_status.shooter_barrel_heat_limit==0)
+                {
+                    shoot_cmd.shoot_freq=3000;
+                }
+            }
+            else
+            {
+                shoot_cmd.shoot_freq=0;
+            }
+            break;
+
     }
     /*-------------------------------------------------------------堵弹反转检测------------------------------------------------------------*/
-    if (shoot_fdb.trigger_motor_current>=9500||reverse_cnt!=0)
+    if (shoot_fdb.trigger_motor_current>=9500||reverse_cnt!=0)/*M2006电机的堵转电流是10000*/
     {
         shoot_cmd.ctrl_mode=SHOOT_REVERSE;
         if (reverse_cnt<120)
@@ -596,22 +600,14 @@ static void remote_to_cmd_pc_controler(void)
         shoot_cmd.cover_open=0;
     }
 
-    /*-----------------------------------------使能判断--------------------------------------------*/
-    //TODO:使能判断放最后，防止抽风
-    /*if(rc_now->kb.bit.G&&key_g_status==0)
-    {
-        key_g_status=1;
-        rt_thread_mdelay(120);
-    }
-    else if(rc_now->kb.bit.G&&key_g_status==1)
-    {
-        key_g_status=0;
-        rt_thread_mdelay(120);
-    }*/
+
+    /*--------------------------------------------------手动模式下清空自瞄传过来的角度buffer------------------------------------------------------*/
     if (gim_cmd.ctrl_mode==GIMBAL_GYRO)
     {
         memset(r_buffer_point,0,sizeof (*r_buffer_point));
     }
+    /*----------------------------------------------------------------使能判断---------------------------------------------------------------*/
+    //TODO:使能判断放最后，防止抽风
     if (rc_now->sw2==RC_UP)
     {
         gim_cmd.ctrl_mode = GIMBAL_RELAX;
@@ -622,7 +618,7 @@ static void remote_to_cmd_pc_controler(void)
         gim_cmd.yaw=0;
         gyro_yaw_inherit=0;
         gyro_pitch_inherit=0;
-        /*案件状态标志位*/
+        /*案件状态标志位重置*/
          key_e_status=-1;
          key_f_status=-1;
         memset(r_buffer_point,0,sizeof (*r_buffer_point));

@@ -34,6 +34,7 @@ typedef enum
     /*扳机状态*/
     TRIGGER_ON=1      ,     //扳机开火状态
     TRIGGER_OFF=0     ,     //扳机闭火状态
+    TRIGGER_ING=2     ,     //扳机持续状态
 
 } trigger_mode_e;
 /**
@@ -53,8 +54,16 @@ typedef enum
 {
   SHOOT_OK=1,   //发射正常
   SHOOT_ERR=0,  //发射异常
+  SHOOT_WAITING=2, //发射异常
 } shoot_back_e;
-
+/**
+  * @brief 单发和连发角度继承
+  */
+typedef enum
+{
+    SHOOT_ANGLE_CONTINUE=0,   //角度为连发状态
+    SHOOT_ANGLE_SINGLE=1,  //角度为单发状态
+} shoot_angle_inherit_e;
 #endif //RTTHREAD_SHOOT_TASK_H
 
 
