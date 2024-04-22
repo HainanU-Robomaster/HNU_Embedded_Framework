@@ -497,5 +497,8 @@ void Referee_Data_Unpack();
  * @brief 裁判系统数据更新并保存
  */
 void Referee_Data_Solve(uint8_t* referee_data_frame);
-
+/**
+ * @brief 线程入口函数
+ */
+void referee_thread_entry(void *argument);
 #endif //REFEREE_SYSTEM_H

@@ -42,6 +42,7 @@
 #endif /* BSP_USING_SHOOT_TASK */
 #ifdef BSP_USING_REFEREE_TASK
 #include "referee_task.h"
+#include "Referee_system.h"
 #endif /* BSP_USING_REFEREE_TASK */
 
 
@@ -118,7 +119,7 @@ struct gimbal_fdb_msg
  */
 struct shoot_fdb_msg
 {
-    shoot_back_e shoot_mode;  // shoot状态反馈
+    shoot_back_e trigger_status;  // shoot状态反馈
     int16_t trigger_motor_current; //拨弹电机电流，传给cmd控制反转
 };
 
@@ -133,4 +134,13 @@ struct shoot_fdb_msg
      rt_uint8_t heartbeat;
  };
 
+ /* ------------------------------ referee反馈状态数据 ------------------------------ */
+/**
+ * @brief 上位机反馈状态数据,由referee发布
+ */
+ struct referee_fdb_msg
+ {
+     robot_status_t robot_status;
+     ext_power_heat_data_t power_heat_data;
+ };
 #endif /* _RM_TASK_H */
