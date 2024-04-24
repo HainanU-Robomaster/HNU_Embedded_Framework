@@ -182,16 +182,16 @@ static void chassis_sub_pull(void)
     sub_get_msg(sub_referee, &referee_fdb);
 }
 
-#define CURRENT_POWER_LIMIT_RATE 80
+#define CURRENT_POWER_LIMIT_RATE 70
 static rt_int16_t motor_control_0(dji_motor_measure_t measure)
 {
     static rt_int16_t set = 0;
     static int16_t chassis_max_current=0;
     static int16_t chassis_power_limit=0;
     /*传参给局部变量防止被更改抽风*/
-    chassis_power_limit=(int16_t)referee_fdb.robot_status.chassis_power_limit;
+    chassis_power_limit=(int16_t)(referee_fdb.robot_status.chassis_power_limit);
     /*底盘功率限制防止buffer溢出*/
-    if(chassis_power_limit>=120)
+    if(chassis_power_limit>=120||chassis_power_limit<0)
     {
         chassis_power_limit=120;
     }
@@ -219,9 +219,9 @@ static rt_int16_t motor_control_1(dji_motor_measure_t measure)
     static int16_t chassis_max_current=0;
     static int16_t chassis_power_limit=0;
     /*传参给局部变量防止被更改抽风*/
-    chassis_power_limit=(int16_t)referee_fdb.robot_status.chassis_power_limit;
+    chassis_power_limit=(int16_t)(referee_fdb.robot_status.chassis_power_limit);
     /*底盘功率限制防止buffer溢出*/
-    if(chassis_power_limit>=120)
+    if(chassis_power_limit>=120||chassis_power_limit<0)
     {
         chassis_power_limit=120;
     }
@@ -248,9 +248,9 @@ static rt_int16_t motor_control_2(dji_motor_measure_t measure)
     static int16_t chassis_max_current=0;
     static int16_t chassis_power_limit=0;
     /*传参给局部变量防止被更改抽风*/
-    chassis_power_limit=(int16_t)referee_fdb.robot_status.chassis_power_limit;
+    chassis_power_limit=(int16_t)(referee_fdb.robot_status.chassis_power_limit);
     /*底盘功率限制防止buffer溢出*/
-    if(chassis_power_limit>=120)
+    if(chassis_power_limit>=120||chassis_power_limit<0)
     {
         chassis_power_limit=120;
     }
@@ -277,9 +277,9 @@ static rt_int16_t motor_control_3(dji_motor_measure_t measure)
     static int16_t chassis_max_current=0;
     static int16_t chassis_power_limit=0;
     /*传参给局部变量防止被更改抽风*/
-    chassis_power_limit=(int16_t)referee_fdb.robot_status.chassis_power_limit;
+    chassis_power_limit=(int16_t)(referee_fdb.robot_status.chassis_power_limit);
     /*底盘功率限制防止buffer溢出*/
-    if(chassis_power_limit>=120)
+    if(chassis_power_limit>=120||chassis_power_limit<0)
     {
         chassis_power_limit=120;
     }
