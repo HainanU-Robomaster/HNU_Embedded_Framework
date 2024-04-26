@@ -113,6 +113,16 @@ struct gimbal_fdb_msg
     float yaw_relative_angle;  //云台相对于初始位置的yaw轴角度
 };
 
+/* ------------------------------ chassis反馈状态数据 ------------------------------ */
+/**
+ * @brief 底盘真实反馈状态数据,由chassis发布
+ */
+ struct chassis_fdb_msg
+ {
+     float x_pos_gim;
+     float y_pos_gim;
+ };
+
 /* ------------------------------ shoot反馈状态数据 ------------------------------ */
 /**
  * @brief 发射机真实反馈状态数据,由shoot发布

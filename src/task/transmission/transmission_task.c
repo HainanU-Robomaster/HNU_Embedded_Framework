@@ -11,7 +11,7 @@
 #define DBG_TAG   "rm.task"
 #define DBG_LVL DBG_INFO
 #include <rtdbg.h>
-#define HEARTBEAT 500 //ms
+#define HEART_BEAT 500 //ms
 /* -------------------------------- 线程间通讯话题相关 ------------------------------- */
 static struct gimbal_cmd_msg gim_cmd;
 static struct ins_msg ins_data;
@@ -115,7 +115,7 @@ void transmission_task_entry(void* argument)
         /* 发布数据更新 */
         trans_pub_push();
 /*--------------------------------------------------具体需要发送的数据--------------------------------- */
-        if((dwt_get_time_ms()-heart_dt)>=HEARTBEAT)
+        if((dwt_get_time_ms()-heart_dt)>=HEART_BEAT)
         {
             rt_device_control(vs_port, RT_DEVICE_CTRL_RESUME, (void *) RT_DEVICE_FLAG_INT_TX);
         }
