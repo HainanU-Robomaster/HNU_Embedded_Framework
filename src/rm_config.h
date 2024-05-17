@@ -217,10 +217,10 @@
 #define TRIGGER_INTEGRAL_V     1000
 #define TRIGGER_MAX_V          20000
 /* 角度环 */
-#define TRIGGER_KP_A           20
-#define TRIGGER_KI_A           0.1
+#define TRIGGER_KP_A           5
+#define TRIGGER_KI_A           0
 #define TRIGGER_KD_A           0
-#define TRIGGER_INTEGRAL_A     2
-#define TRIGGER_MAX_A          500
+#define TRIGGER_INTEGRAL_A     0
+#define TRIGGER_MAX_A          10000
 
 #endif /* _RM_CONFIG_H */
