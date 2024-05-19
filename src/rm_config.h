@@ -109,7 +109,7 @@
 #define YAW_MOTOR_ID     0x207
 #define PITCH_MOTOR_ID   0x208
 
-#define CENTER_ECD_YAW   8130         //云台yaw轴编码器归中值
+#define CENTER_ECD_YAW   6112         //云台yaw轴编码器归中值
 #define CENTER_ECD_PITCH 6115         //云台pitch轴编码器归中值
 
 /* pitch轴最大仰角 */
