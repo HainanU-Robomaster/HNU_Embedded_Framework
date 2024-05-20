@@ -86,8 +86,8 @@
 
 /******** 底盘最大速度设置 *******/
 /* 底盘移动最大速度，单位是毫米每秒 */
-#define MAX_CHASSIS_VX_SPEED 7000
-#define MAX_CHASSIS_VY_SPEED 7000
+#define MAX_CHASSIS_VX_SPEED 5000
+#define MAX_CHASSIS_VY_SPEED 5000
 
 #define MAX_CHASSIS_VX_SPEED_HIGH 11000
 #define MAX_CHASSIS_VY_SPEED_HIGH 11000
@@ -100,7 +100,7 @@
 
 /* --------------------------------- 底盘PID参数 -------------------------------- */
 /* 电机速度环 */
-#define CHASSIS_KP_V_MOTOR              6
+#define CHASSIS_KP_V_MOTOR              4
 #define CHASSIS_KI_V_MOTOR              0
 #define CHASSIS_KD_V_MOTOR              0.0001
 #define CHASSIS_INTEGRAL_V_MOTOR        2000

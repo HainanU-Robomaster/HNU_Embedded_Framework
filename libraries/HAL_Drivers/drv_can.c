@@ -140,7 +140,7 @@ static rt_err_t _can_config(struct rt_can_device *can, struct can_configure *cfg
     drv_can->CanHandle.Init.TimeTriggeredMode = DISABLE;
     drv_can->CanHandle.Init.AutoBusOff = ENABLE;
     drv_can->CanHandle.Init.AutoWakeUp = DISABLE;
-    drv_can->CanHandle.Init.AutoRetransmission = DISABLE;
+    drv_can->CanHandle.Init.AutoRetransmission = ENABLE;
     drv_can->CanHandle.Init.ReceiveFifoLocked = DISABLE;
     drv_can->CanHandle.Init.TransmitFifoPriority = ENABLE;
 
@@ -734,21 +734,21 @@ static void _can_sce_isr(struct rt_can_device *can)
                 }
                 SET_BIT(hcan->Instance->TSR, CAN_TSR_RQCP2);
             }
-            else
-            {
-                if (__HAL_CAN_GET_FLAG(hcan, CAN_FLAG_TERR0))/*IF AutoRetransmission = ENABLE,ACK ERR handler*/
-                {
-                    SET_BIT(hcan->Instance->TSR, CAN_TSR_ABRQ0);/*Abort the send request, trigger the TX interrupt,release completion quantity*/
-                }
-                else if (__HAL_CAN_GET_FLAG(hcan, CAN_FLAG_TERR1))
-                {
-                    SET_BIT(hcan->Instance->TSR, CAN_TSR_ABRQ1);
-                }
-                else if (__HAL_CAN_GET_FLAG(hcan, CAN_FLAG_TERR2))
-                {
-                    SET_BIT(hcan->Instance->TSR, CAN_TSR_ABRQ2);
-                }
-            }
+//            else
+//            {
+//                if (__HAL_CAN_GET_FLAG(hcan, CAN_FLAG_TERR0))/*IF AutoRetransmission = ENABLE,ACK ERR handler*/
+//                {
+//                    SET_BIT(hcan->Instance->TSR, CAN_TSR_ABRQ0);/*Abort the send request, trigger the TX interrupt,release completion quantity*/
+//                }
+//                else if (__HAL_CAN_GET_FLAG(hcan, CAN_FLAG_TERR1))
+//                {
+//                    SET_BIT(hcan->Instance->TSR, CAN_TSR_ABRQ1);
+//                }
+//                else if (__HAL_CAN_GET_FLAG(hcan, CAN_FLAG_TERR2))
+//                {
+//                    SET_BIT(hcan->Instance->TSR, CAN_TSR_ABRQ2);
+//                }
+//            }
             break;
         case RT_CAN_BUS_IMPLICIT_BIT_ERR:
         case RT_CAN_BUS_EXPLICIT_BIT_ERR:
@@ -765,6 +765,8 @@ static void _can_sce_isr(struct rt_can_device *can)
     can->status.errcode = errtype & 0x07;
     hcan->Instance->MSR |= CAN_MSR_ERRI;
 }
+
+
 
 static void _can_tx_isr(struct rt_can_device *can)
 {
@@ -810,6 +812,10 @@ static void _can_tx_isr(struct rt_can_device *can)
         }
         /* Write 0 to Clear transmission status flag RQCPx */
         SET_BIT(hcan->Instance->TSR, CAN_TSR_RQCP2);
+    }
+    else
+    {
+        rt_hw_can_isr(can,RT_CAN_EVENT_TX_FAIL|0<<8);
     }
 }
 

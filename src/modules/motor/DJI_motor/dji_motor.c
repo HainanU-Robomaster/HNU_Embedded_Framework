@@ -91,7 +91,7 @@ static uint8_t sender_enable_flag[6] = {0};
              if (!rt_strcmp(dji_motor_obj[i]->can_dev->parent.name, config->can_name) && dji_motor_obj[i]->rx_id == config->rx_id)
              {
                  LOG_E("ID crash. Check in debug mode, add dji_motor_obj to watch to get more information.");
-                 while (1) // 6020的id 1-4和2006/3508的id 5-8会发生冲突(若有注册,即1!5,2!6,3!7,4!8)
+                 //while (1) // 6020的id 1-4和2006/3508的id 5-8会发生冲突(若有注册,即1!5,2!6,3!7,4!8)
                      LOG_E("id [%d], can_bus [%s]", config->rx_id, config->can_name);
              }
          }
@@ -119,7 +119,7 @@ static uint8_t sender_enable_flag[6] = {0};
              if (!rt_strcmp(dji_motor_obj[i]->can_dev->parent.name, config->can_name) && dji_motor_obj[i]->rx_id == config->rx_id)
              {
                  LOG_E("ID crash. Check in debug mode, add dji_motor_obj to watch to get more information.");
-                 while (1) // 6020的id 1-4和2006/3508的id 5-8会发生冲突(若有注册,即1!5,2!6,3!7,4!8)
+                 //while (1) // 6020的id 1-4和2006/3508的id 5-8会发生冲突(若有注册,即1!5,2!6,3!7,4!8)
                      LOG_E("id [%d], can_bus [%s]", config->rx_id, config->can_name);
              }
          }
@@ -211,7 +211,7 @@ void dji_motor_control()
     uint8_t size = 0;
 
     // 遍历所有电机实例,运行控制算法并填入报文
-    for (size_t i = 0; i < idx; ++i)
+    for (rt_uint8_t i = 0; i < idx; ++i)
     {
         motor = dji_motor_obj[i];
         measure = motor->measure;
