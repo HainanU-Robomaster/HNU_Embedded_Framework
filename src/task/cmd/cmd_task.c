@@ -16,13 +16,14 @@
 #include <rtdbg.h>
 
 static publisher_t *pub_gim, *pub_chassis, *pub_shoot;
-static subscriber_t *sub_gim, *sub_shoot,*sub_trans,*sub_ins;
+static subscriber_t *sub_gim, *sub_shoot,*sub_trans,*sub_ins,*sub_referee;
 static struct gimbal_cmd_msg gim_cmd;
 static struct gimbal_fdb_msg gim_fdb;
 static struct shoot_cmd_msg  shoot_cmd;
 static struct shoot_fdb_msg  shoot_fdb;
 static struct chassis_cmd_msg chassis_cmd;
 static struct trans_fdb_msg  trans_fdb;
+static struct referee_fdb_msg referee_fdb;
 static struct ins_msg ins_data;
 
 static rc_dbus_obj_t *rc_now, *rc_last;
@@ -46,11 +47,10 @@ static gim_auto_judge pitch_auto;
 /*键盘按键状态标志位*/
 static int key_e_status=-1;
 static int key_f_status=-1;
+static int key_q_status=-1;
+static int key_v_status=-1;
 /*用于清除环形缓冲区buffer的指针*/
 extern rt_uint8_t *r_buffer_point;
-/*----------------------------------裁判系统数据接收/比赛状态-------------------------------------*/
-extern robot_status_t robot_status;
-extern ext_power_heat_data_t power_heat_data_t;
 /* ------------------------------- 遥控数据转换为控制指令 ------------------------------ */
 static void remote_to_cmd_sbus(void);
 static void remote_to_cmd_dbus(void);
@@ -84,6 +84,7 @@ void cmd_thread_entry(void *argument)
     rc_now->sw2 = RC_UP;
     //rc_now->sw3 = RC_UP;
     //rc_now->sw4 = RC_UP;
+    /* 键盘控制急停斜坡的注册*/
     km_vx_ramp = ramp_register(100, 2500000);
     km_vy_ramp = ramp_register(100, 2500000);
     LOG_I("Cmd Task Start");
@@ -152,6 +153,7 @@ static void cmd_sub_init(void)
     sub_gim = sub_register("gim_fdb", sizeof(struct gimbal_fdb_msg));
     sub_shoot= sub_register("shoot_fdb", sizeof(struct shoot_fdb_msg));
     sub_trans= sub_register("trans_fdb", sizeof(struct trans_fdb_msg));
+    sub_referee= sub_register("referee_fdb",sizeof(struct referee_fdb_msg));
     sub_ins = sub_register("ins_msg", sizeof(struct ins_msg));
 }
 
@@ -164,6 +166,7 @@ static void cmd_sub_pull(void)
     sub_get_msg(sub_gim, &gim_fdb);
     sub_get_msg(sub_shoot, &shoot_fdb);
     sub_get_msg(sub_trans,&trans_fdb);
+    sub_get_msg(sub_referee, &referee_fdb);
     sub_get_msg(sub_ins, &ins_data);
 }
 
@@ -478,12 +481,12 @@ static void remote_to_cmd_pc_controler(void)
         shoot_cmd.friction_status=0;
     }
     /*TODO:------------------------------------------------------------扳机连发模式---------------------------------------------------------*/
-    if((rc_now->mouse.l==1||rc_now->wheel>=200)&&shoot_cmd.friction_status==1&&(power_heat_data_t.shooter_id1_17mm_cooling_heat < (robot_status.shooter_barrel_heat_limit-10)))
+    if((rc_now->mouse.l==1||rc_now->wheel>=200)&&shoot_cmd.friction_status==1&&(referee_fdb.power_heat_data.shooter_17mm_1_barrel_heat < (referee_fdb.robot_status.shooter_barrel_heat_limit-10)))
     {
         shoot_cmd.ctrl_mode=SHOOT_COUNTINUE;
         shoot_cmd.shoot_freq=4500;
 
-        if(((int16_t)robot_status.shooter_barrel_heat_limit-(int16_t)power_heat_data_t.shooter_id1_17mm_cooling_heat)<=30)
+        if(((int16_t)referee_fdb.robot_status.shooter_barrel_heat_limit-(int16_t)referee_fdb.power_heat_data.shooter_17mm_1_barrel_heat)<=30)
         {
             shoot_cmd.shoot_freq=0;
         }
@@ -493,7 +496,7 @@ static void remote_to_cmd_pc_controler(void)
             shoot_cmd.shoot_freq=4500;
         }
 
-        if(robot_status.shooter_barrel_heat_limit==0)
+        if(referee_fdb.robot_status.shooter_barrel_heat_limit==0)
         {
             shoot_cmd.shoot_freq=2500;
         }
