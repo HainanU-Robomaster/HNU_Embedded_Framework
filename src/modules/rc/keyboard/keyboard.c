@@ -138,4 +138,5 @@ void PC_Handle_kb(void)
     key_fsm(&km.e_sta, rc_dbus_obj[0].kb.bit.E);
     key_fsm(&km.f_sta, rc_dbus_obj[0].kb.bit.F);
     key_fsm(&km.shift_sta, rc_dbus_obj[0].kb.bit.SHIFT);
+    key_fsm(&km.v_sta, rc_dbus_obj[0].kb.bit.V);
 }

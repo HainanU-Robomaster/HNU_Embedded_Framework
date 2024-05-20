@@ -109,7 +109,7 @@
 #define YAW_MOTOR_ID     0x207
 #define PITCH_MOTOR_ID   0x208
 
-#define CENTER_ECD_YAW   8130         //云台yaw轴编码器归中值
+#define CENTER_ECD_YAW   6112         //云台yaw轴编码器归中值
 #define CENTER_ECD_PITCH 6115         //云台pitch轴编码器归中值
 
 /* pitch轴最大仰角 */
@@ -217,10 +217,10 @@
 #define TRIGGER_INTEGRAL_V     1000
 #define TRIGGER_MAX_V          20000
 /* 角度环 */
-#define TRIGGER_KP_A           20
-#define TRIGGER_KI_A           0.1
+#define TRIGGER_KP_A           5
+#define TRIGGER_KI_A           0
 #define TRIGGER_KD_A           0
-#define TRIGGER_INTEGRAL_A     2
-#define TRIGGER_MAX_A          500
+#define TRIGGER_INTEGRAL_A     0
+#define TRIGGER_MAX_A          10000
 
 #endif /* _RM_CONFIG_H */

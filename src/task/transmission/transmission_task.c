@@ -110,8 +110,6 @@ void transmission_task_entry(void* argument)
         trans_start = dwt_get_time_ms();
         /*订阅数据更新*/
         trans_sub_pull();
-        /* 发布数据更新 */
-        trans_pub_push();
 /*--------------------------------------------------具体需要发送的数据--------------------------------- */
         if((dwt_get_time_ms()-heart_dt)>=HEART_BEAT)
         {
@@ -119,6 +117,8 @@ void transmission_task_entry(void* argument)
         }
         Send_to_pc(rpy_tx_data);
 /*--------------------------------------------------具体需要发送的数据---------------------------------*/
+        /* 发布数据更新 */
+        trans_pub_push();
         /* 用于调试监测线程调度使用 */
         trans_dt = dwt_get_time_ms() - trans_start;
         if (trans_dt > 1)
