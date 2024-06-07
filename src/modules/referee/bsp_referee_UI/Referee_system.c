@@ -8,35 +8,161 @@
 #include "string.h"
 #include "fifo.h"
 #include "BSP_CRC.h"
+#include "rm_task.h"
 
-fifo_s_t RX_AgreementData_FIFO;           //实例化的裁判系统接收数据FIFO容器
-uint8_t RX_FIFO_Space[FIFO_BUF_LENGTH];              //FIFO的实际存储区�?
-extern UART_HandleTypeDef huart6;
-extern DMA_HandleTypeDef hdma_usart6_rx;
-Frame_header_Typedef Referee_Data_Header;   //接收数据帧头结构体
-uint8_t RX_AgreementData_Buffer0[Agreement_RX_BUF_NUM];   //接收裁判系统返回数据的接收缓冲区0,该缓冲区设置的相当富裕
-uint8_t RX_AgreementData_Buffer1[Agreement_RX_BUF_NUM];   //接收裁判系统返回数据的接收缓冲区1，该缓冲区设置的相当富裕
-uint8_t RX_Agreement_Data[Agreement_RX_BUF_NUM];          //用来单独存放接收数据的Data段
-unpack_data_t referee_unpack_obj;
+static fifo_s_t RX_AgreementData_FIFO;           //实例化的裁判系统接收数据FIFO容器
+static uint8_t RX_FIFO_Space[FIFO_BUF_LENGTH];              //FIFO的实际存储区�?
+/* --------------------------------裁判系统串口句柄 ------------------------------- */
+UART_HandleTypeDef huart6;
+DMA_HandleTypeDef hdma_usart6_rx;
+DMA_HandleTypeDef hdma_usart6_tx;
+
+static Frame_header_Typedef Referee_Data_Header;   //接收数据帧头结构体
+static uint8_t RX_AgreementData_Buffer0[Agreement_RX_BUF_NUM];   //接收裁判系统返回数据的接收缓冲区0,该缓冲区设置的相当富裕
+static uint8_t RX_AgreementData_Buffer1[Agreement_RX_BUF_NUM];   //接收裁判系统返回数据的接收缓冲区1，该缓冲区设置的相当富裕
+static uint8_t RX_Agreement_Data[Agreement_RX_BUF_NUM];          //用来单独存放接收数据的Data段
+static unpack_data_t referee_unpack_obj;
 
 /*!结构体实例化*/
-game_status_t                           game_status;
-ext_game_result_t                       game_result;
-ext_game_robot_HP_t                     game_robot_HP_t;
-ext_event_data_t                        field_event;
-ext_supply_projectile_action_t          supply_projectile_action_t;
-ext_referee_warning_t                   referee_warning_t;
-robot_status_t                          robot_status;
-ext_power_heat_data_t                   power_heat_data_t;
-ext_game_robot_pos_t                    game_robot_pos_t;
-ext_buff_t                              buff_musk_t;
-aerial_robot_energy_t                   robot_energy_t;
-ext_robot_hurt_t                        robot_hurt_t;
-ext_shoot_data_t                        shoot_data_t;
-ext_bullet_remaining_t                  bullet_remaining_t;
-ext_student_interactive_header_data_t   student_interactive_data_t;
-Frame_header_Typedef Referee_Data_header;         //实例化一个帧头结构体
-RX_AgreementData     Referee_Data;                //实例化一个数据帧结构体
+static game_status_t                           game_status;
+static game_result_t                           game_result;
+static game_robot_HP_t                         game_robot_HP;
+static event_data_t                            field_event;
+static ext_supply_projectile_action_t          supply_projectile_action_t;
+static referee_warning_t                       referee_warning;
+static dart_info_t                             dart_info;
+static robot_status_t                          robot_status;
+static power_heat_data_t                       power_heat_data;
+static robot_pos_t                             robot_pos;
+static ext_buff_t                              buff_musk_t;
+static air_support_data_t                      air_support_data;
+static hurt_data_t                             hurt_data;
+static shoot_data_t                            shoot_data;
+static projectile_allowance_t                  projectile_allowance;
+static rfid_status_t                           rfid_status;
+static dart_client_cmd_t                       dart_client_cmd;
+static ground_robot_position_t                 ground_robot_position;
+static radar_mark_data_t                       radar_mark_data;
+static sentry_info_t                           sentry_info;
+static radar_info_t                            radar_info;
+static robot_interaction_data_t                robot_interaction_data;
+static custom_robot_data_t                     custom_robot_data;
+static map_command_t                           map_command;
+static remote_control_t                        remote_control;
+static map_robot_data_t                        map_robot_data;
+static custom_client_data_t                    custom_client_data;
+static map_data_t                              map_data;
+static custom_info_t                           custom_info;
+static Frame_header_Typedef Referee_Data_header;         //实例化一个帧头结构体
+static RX_AgreementData     Referee_Data;                //实例化一个数据帧结构体
+
+/* -------------------------------- 线程间通讯话题相关 ------------------------------- */
+static struct shoot_cmd_msg shoot_cmd;
+static struct shoot_fdb_msg shoot_fdb;
+static struct referee_fdb_msg referee_fdb;
+static publisher_t *pub_referee;
+
+static void referee_pub_init(void);
+static void referee_sub_init(void);
+static void referee_pub_push(void);
+static void referee_sub_pull(void);
+/*裁判系统线程入口*/
+void referee_thread_entry(void *argument)
+{
+    /*用户3pin串口初始化*/
+    /* DMA controller clock enable */
+    __HAL_RCC_DMA2_CLK_ENABLE();
+    /* DMA2_Stream1_IRQn interrupt configuration */
+    HAL_NVIC_SetPriority(DMA2_Stream1_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(DMA2_Stream1_IRQn);
+    /* DMA2_Stream6_IRQn interrupt configuration */
+    /* HAL_NVIC_SetPriority(DMA2_Stream6_IRQn, 0, 0);
+     HAL_NVIC_EnableIRQ(DMA2_Stream6_IRQn);*/
+    huart6.Instance=USART6;
+    huart6.Init.BaudRate=115200;
+    huart6.Init.WordLength=UART_WORDLENGTH_8B;
+    huart6.Init.StopBits = UART_STOPBITS_1;
+    huart6.Init.Parity=UART_PARITY_NONE;
+    huart6.Init.Mode=UART_MODE_TX_RX;
+    huart6.Init.HwFlowCtl=UART_HWCONTROL_NONE;
+    huart6.Init.OverSampling=UART_OVERSAMPLING_16;
+    HAL_UART_Init(&huart6);
+    /*裁判系统初始化*/
+    Referee_system_Init(RX_AgreementData_Buffer0,RX_AgreementData_Buffer1,Agreement_RX_BUF_NUM);
+    /*线程发布订阅机制初始化*/
+    referee_pub_init();
+    referee_sub_init();
+    /*裁判系统数据解包*/
+    while(1)
+    {
+        /*线程订阅数据下拉*/
+        referee_sub_pull();
+        /*接收数据解包*/
+        if ((hdma_usart6_rx.Instance->CR & DMA_SxCR_CT) == 0U) //如果当前缓冲区是0，解包0缓冲区，否则解包1缓冲区
+        {
+            Referee_Data_Unpack(RX_AgreementData_Buffer0, &Referee_Data_header, &Referee_Data);
+        }
+        else
+        {
+            Referee_Data_Unpack(RX_AgreementData_Buffer1, &Referee_Data_header, &Referee_Data);
+        }
+        /*将裁判系统数据转存要发送的buffer里面*/
+        memcpy(&(referee_fdb.robot_status),&robot_status, sizeof(robot_status_t));
+        memcpy(&(referee_fdb.power_heat_data),&power_heat_data, sizeof(power_heat_data_t));
+        /*线程数据发布*/
+        referee_pub_push();
+        rt_thread_mdelay(1);
+    }
+}
+
+/**
+ *@brief 裁判系统线程入口函数
+ *
+ */
+void USART6_IRQHandler(void)
+{
+    if (huart6.Instance->SR & UART_FLAG_RXNE)
+    {
+        __HAL_UART_CLEAR_PEFLAG(&huart6);
+    }
+    else if (USART6->SR & UART_FLAG_IDLE)
+    {
+        static uint16_t this_time_rx_len = 0;
+
+        __HAL_UART_CLEAR_IDLEFLAG(&huart6);      //清除空闲中断
+
+        if ((hdma_usart6_rx.Instance->CR & DMA_SxCR_CT) == RESET) //如果当前的缓冲区是缓冲区0
+        {
+            //计算这一帧接收的数据的长度
+            __HAL_DMA_DISABLE(&hdma_usart6_rx);
+            this_time_rx_len = Agreement_RX_BUF_NUM - hdma_usart6_rx.Instance->NDTR;
+            //重新设定数据长度
+            hdma_usart6_rx.Instance->NDTR = Agreement_RX_BUF_NUM;
+            //把缓冲区设置成缓冲区1
+            hdma_usart6_rx.Instance->CR |= DMA_SxCR_CT;
+
+            __HAL_DMA_ENABLE(&hdma_usart6_rx);
+            //将这1帧数据放入fifo0
+            fifo_s_puts(&RX_AgreementData_FIFO, (char *) RX_AgreementData_Buffer0, this_time_rx_len);
+        }
+        else //如果当前的缓冲区是缓冲区1
+        {
+            //计算这一帧接收的数据的长度
+            __HAL_DMA_DISABLE(&hdma_usart6_rx);
+            this_time_rx_len = Agreement_RX_BUF_NUM -hdma_usart6_rx.Instance->NDTR;
+            //osSemaphoreRelease(RefereeRxOKHandle);  //释放信号量
+            //重新设定数据长度
+            hdma_usart6_rx.Instance->NDTR = Agreement_RX_BUF_NUM;
+            //把缓冲区设置成缓冲区0
+            hdma_usart6_rx.Instance->CR &= ~DMA_SxCR_CT;
+            __HAL_DMA_ENABLE(&hdma_usart6_rx);
+            fifo_s_puts(&RX_AgreementData_FIFO, (char *) RX_AgreementData_Buffer1, this_time_rx_len);
+
+        }
+    }
+    HAL_UART_IRQHandler(&huart6);
+}
+
 
 /**
  *@brief 裁判系统初始化串口通信以及实例化结构体
@@ -51,24 +177,32 @@ void Referee_system_Init(uint8_t *  rx1_buf, uint8_t *rx2_buf, uint16_t dma_buf_
     memset(&Referee_Data, 0, sizeof(RX_AgreementData));
 
     memset(&game_status, 0, sizeof(game_status_t));
-    memset(&game_result, 0, sizeof(ext_game_result_t));
-    memset(&game_robot_HP_t, 0, sizeof(ext_game_robot_HP_t));
-
-
-    memset(&field_event, 0, sizeof(ext_event_data_t));
+    memset(&game_result, 0, sizeof(game_result_t));
+    memset(&game_robot_HP, 0, sizeof(game_robot_HP_t));
+    memset(&field_event, 0, sizeof(event_data_t));
     memset(&supply_projectile_action_t, 0, sizeof(ext_supply_projectile_action_t));
-    memset(&referee_warning_t, 0, sizeof(ext_referee_warning_t));
-
-
+    memset(&referee_warning, 0, sizeof(referee_warning_t));
+    memset(&dart_info, 0, sizeof(dart_info_t));
     memset(&robot_status, 0, sizeof(robot_status_t));
-    memset(&power_heat_data_t, 0, sizeof(ext_power_heat_data_t));
-    memset(&game_robot_pos_t, 0, sizeof(ext_game_robot_pos_t));
+    memset(&power_heat_data, 0, sizeof(power_heat_data_t));
+    memset(&robot_pos, 0, sizeof(robot_pos_t));
     memset(&buff_musk_t, 0, sizeof(ext_buff_t));
-    memset(&robot_energy_t, 0, sizeof(aerial_robot_energy_t));
-    memset(&robot_hurt_t, 0, sizeof(ext_robot_hurt_t));
-    memset(&shoot_data_t, 0, sizeof(ext_shoot_data_t));
-    memset(&bullet_remaining_t, 0, sizeof(ext_bullet_remaining_t));
-    memset(&student_interactive_data_t, 0, sizeof(ext_student_interactive_header_data_t));
+    memset(&air_support_data, 0, sizeof(air_support_data_t));
+    memset(&hurt_data, 0, sizeof(hurt_data_t));
+    memset(&shoot_data, 0, sizeof(shoot_data_t));
+    memset(&projectile_allowance, 0, sizeof(projectile_allowance_t));
+    memset(&ground_robot_position, 0, sizeof(ground_robot_position_t));
+    memset(&radar_mark_data, 0, sizeof(radar_mark_data_t));
+    memset(&sentry_info, 0, sizeof(sentry_info_t));
+    memset(&radar_info, 0, sizeof(radar_info_t));
+    memset(&robot_interaction_data, 0, sizeof(robot_interaction_data_t));
+    memset(&custom_robot_data, 0, sizeof(custom_robot_data_t));
+    memset(&map_command, 0, sizeof(map_command_t));
+    memset(&remote_control, 0, sizeof(remote_control_t));
+    memset(&map_robot_data, 0, sizeof(map_robot_data_t ));
+    memset(&custom_client_data, 0, sizeof(custom_client_data_t));
+    memset(&map_data, 0, sizeof(map_data_t));
+    memset(&custom_info, 0, sizeof(custom_info_t));
     //使能DMA串口接收
     SET_BIT(huart6.Instance->CR3, USART_CR3_DMAR);
 
@@ -222,53 +356,117 @@ void Referee_Data_Solve(uint8_t* frame)
             memcpy(&game_status, frame + index, sizeof(game_status_t));
             break;
         case GAME_RESULT_CMD_ID:
-            memcpy(&game_result, frame + index, sizeof(ext_game_result_t));
+            memcpy(&game_result, frame + index, sizeof(game_result_t));
             break;
         case GAME_ROBOT_HP_CMD_ID:
-            memcpy(&game_robot_HP_t, frame + index, sizeof(ext_game_robot_HP_t));
+            memcpy(&game_robot_HP, frame + index, sizeof(game_robot_HP_t));
             break;
         case FIELD_EVENTS_CMD_ID:
-            memcpy(&field_event, frame + index, sizeof(ext_event_data_t));
+            memcpy(&field_event, frame + index, sizeof(event_data_t));
             break;
         case SUPPLY_PROJECTILE_ACTION_CMD_ID:
             memcpy(&supply_projectile_action_t, frame + index, sizeof(ext_supply_projectile_action_t));
             break;
         case REFEREE_WARNING_CMD_ID:
-            memcpy(&referee_warning_t, frame + index, sizeof(ext_referee_warning_t));
+            memcpy(&referee_warning, frame + index, sizeof(referee_warning_t));
+            break;
+        case DART_FIRE_CMD_ID :
+            memcpy(&dart_info, frame + index, sizeof(dart_info_t));
             break;
         case ROBOT_STATUS_CMD_ID:
             memcpy(&robot_status, frame + index, sizeof(robot_status_t));
             break;
         case POWER_HEAT_DATA_CMD_ID:
-            memcpy(&power_heat_data_t, frame + index, sizeof(ext_power_heat_data_t));
+            memcpy(&power_heat_data, frame + index, sizeof(power_heat_data_t));
             break;
         case ROBOT_POS_CMD_ID:
-            memcpy(&game_robot_pos_t, frame + index, sizeof(ext_game_robot_pos_t));
+            memcpy(&robot_pos, frame + index, sizeof(robot_pos_t));
             break;
         case BUFF_MUSK_CMD_ID:
             memcpy(&buff_musk_t, frame + index, sizeof(ext_buff_t));
             break;
         case AERIAL_ROBOT_ENERGY_CMD_ID:
-            memcpy(&robot_energy_t, frame + index, sizeof(aerial_robot_energy_t));
+            memcpy(&air_support_data, frame + index, sizeof(air_support_data_t));
             break;
         case ROBOT_HURT_CMD_ID:
-            memcpy(&robot_hurt_t, frame + index, sizeof(ext_robot_hurt_t));
+            memcpy(&hurt_data, frame + index, sizeof(hurt_data_t));
             break;
         case SHOOT_DATA_CMD_ID:
-            memcpy(&shoot_data_t, frame + index, sizeof(ext_shoot_data_t));
+            memcpy(&shoot_data, frame + index, sizeof(shoot_data_t));
             break;
         case BULLET_REMAINING_CMD_ID:
-            memcpy(&bullet_remaining_t, frame + index, sizeof(ext_bullet_remaining_t));
+            memcpy(&projectile_allowance, frame + index, sizeof(projectile_allowance_t));
+            break;
+        case ROBOT_RFID_CMD_ID :
+            memcpy(&rfid_status, frame + index, sizeof(rfid_status_t));
+            break;
+        case DART_DIRECTIONS_CMD_ID  :
+            memcpy(&dart_client_cmd, frame + index, sizeof(dart_client_cmd_t));
+            break;
+        case ROBOT_LOCATION_CMD_ID :
+            memcpy(&ground_robot_position, frame + index, sizeof(ground_robot_position_t));
+            break;
+        case RADAR_PROGRESS_CMD_ID :
+            memcpy(&radar_mark_data, frame + index, sizeof(radar_mark_data_t));
+            break;
+        case SENTRY_AUTONOMY__CMD_ID :
+            memcpy(&sentry_info, frame + index, sizeof(sentry_info_t));
+            break;
+        case RADAR_AUTONOMY_CMD_ID :
+            memcpy(&radar_info, frame + index, sizeof(radar_info_t));
             break;
         case STUDENT_INTERACTIVE_DATA_CMD_ID:
-            memcpy(&student_interactive_data_t, frame + index, sizeof(ext_student_interactive_header_data_t));
+            memcpy(&robot_interaction_data, frame + index, sizeof(robot_interaction_data_t));
+            break;
+        case CUSTOMER_CONTROLLER_ROBOT_CMD_ID :
+            memcpy(&custom_robot_data, frame + index, sizeof(custom_robot_data_t));
+            break;
+        case PLAYER_MINIMAP_CMD_ID :
+            memcpy(&map_command, frame + index, sizeof(map_command_t));
+            break;
+        case KEYBOARD_MOUSE_CMD_ID :
+            memcpy(&remote_control, frame + index, sizeof(remote_control_t));
+            break;
+        case RADAR_MINIMAP_CMD_ID :
+            memcpy(&map_robot_data, frame + index, sizeof(map_robot_data_t));
+            break;
+        case CUSTOMER_CONTROLLER_PLAYER_CMD_ID :
+            memcpy(&custom_client_data, frame + index, sizeof(custom_client_data_t));
+            break;
+        case PLAYER_MINIMAP_SENTRY_CMD_ID :
+            memcpy(&map_data, frame + index, sizeof(map_data_t));
+            break;
+        case PLAYER_MINIMAP_ROBOT_CMD_ID :
+            memcpy(&custom_info, frame + index, sizeof(custom_info_t));
             break;
     }
 }
 
+/**
+ * @brief shoot 线程中所有发布者初始化
+ */
+static void referee_pub_init()
+{
+    pub_referee = pub_register("referee_fdb", sizeof(struct referee_fdb_msg));
+}
+/**
+ * @brief shoot 线程中所有订阅者初始化
+ */
+static void referee_sub_init()
+{
 
+}
+/**
+ * @brief shoot 线程中所有发布者推送更新话题
+ */
+static void referee_pub_push()
+{
+    pub_push_msg(pub_referee, &referee_fdb);
+}
+/**
+ * @brief shoot 线程中所有订阅者推送更新话题
+ */
+static void referee_sub_pull()
+{
 
-
-
-
-
+}

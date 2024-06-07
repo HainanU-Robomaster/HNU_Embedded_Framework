@@ -42,6 +42,7 @@
 #endif /* BSP_USING_SHOOT_TASK */
 #ifdef BSP_USING_REFEREE_TASK
 #include "referee_task.h"
+#include "Referee_system.h"
 #endif /* BSP_USING_REFEREE_TASK */
 
 
@@ -148,5 +149,13 @@ struct shoot_fdb_msg
      float angular_z;
      rt_uint8_t heartbeat;
  };
-
+ /* ------------------------------ referee反馈状态数据 ------------------------------ */
+/**
+ * @brief 上位机反馈状态数据,由referee发布
+ */
+ struct referee_fdb_msg
+ {
+     robot_status_t robot_status;
+     power_heat_data_t power_heat_data;
+ };
 #endif /* _RM_TASK_H */
