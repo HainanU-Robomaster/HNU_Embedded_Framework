@@ -2,6 +2,7 @@
  * Change Logs:
  * Date            Author          Notes
  * 2023-08-23      ChuShicheng     first version
+ * 2024-09-24      YouYekai        Change macro definition and add arguements'units
  */
 #ifndef _RM_CONFIG_H
 #define _RM_CONFIG_H
@@ -13,7 +14,7 @@
 #define CAN_GIMBAL     "can2"
 
 /* 磁力计所挂载的 i2c 设备名称(软件i2c) */
-#define I2C_MAG        "i2c1"    //"Notice: PA8 --> 8; PC9 --> 41"
+#define I2C_MAGMETER        "i2c1"    //"Notice: PA8 --> 8; PC9 --> 41"
 
 /* 陀螺仪所挂载的 SPI 设备名称及 CS 引脚 */
 #define SPI_GYRO       "spi1"
@@ -23,8 +24,8 @@
 #define SPI_ACC_CS     4
 
 /* 弹仓盖舵机所挂载的 PWM 设备及通道号 */
-#define PWM_COVER        "pwm1"
-#define PWM_COVER_CH     2
+#define PWM_MAG_COVER        "pwm1"
+#define PWM_MAG_COVER_CHN     2
 
 /* 遥控器所挂载的 usart 设备名称 */
 #define USART_RC       "uart3"
@@ -36,31 +37,31 @@
 #define KB_RATIO          0.010f
 /* 遥控器模式下的底盘最大速度限制 */
 /* 底盘平移速度 */
-#define CHASSIS_RC_MOVE_RATIO_X 1.0f
+#define CHASSIS_RC_X_MAX_MOVE_RATIO 1.0f
 /* 底盘前进速度 */
-#define CHASSIS_RC_MOVE_RATIO_Y 0.8f
+#define CHASSIS_RC_Y_MAX_MOVE_RATIO 0.8f
 /* 底盘旋转速度，只在底盘开环模式下使用 */
-#define CHASSIS_RC_MOVE_RATIO_R 1.0f
+#define CHASSIS_RC_R_MAX_MOVE_RATIO 1.0f
 
 /* 鼠标键盘模式下的底盘最大速度限制 */
 /* 底盘平移速度 */
-#define CHASSIS_PC_MOVE_RATIO_X 1.0f
+#define CHASSIS_PC_X_MAX_MOVE_RATIO 1.0f
 /* 底盘前进速度 */
-#define CHASSIS_PC_MOVE_RATIO_Y 1.0f
+#define CHASSIS_PC_Y_MAX_MOVE_RATIO 1.0f
 /* 底盘旋转速度，只在底盘开环模式下使用 */
-#define CHASSIS_PC_MOVE_RATIO_R 5.0f
+#define CHASSIS_PC_R_MAX_MOVE_RATIO 5.0f
 
 /* 遥控器模式下的云台速度限制 */
 /* 云台pitch轴速度 */
-#define GIMBAL_RC_MOVE_RATIO_PIT 0.5f
+#define GIMBAL_RC_PIT_MAX_MOVE_RATIO 0.5f
 /* 云台yaw轴速度 */
-#define GIMBAL_RC_MOVE_RATIO_YAW 0.5f
+#define GIMBAL_RC_YAW_MAX_MOVE_RATIO 0.5f
 
 /* 鼠标键盘模式下的云台速度限制 */
 /* 云台pitch轴速度 */
-#define GIMBAL_PC_MOVE_RATIO_PIT 0.1f
+#define GIMBAL_PC_PIT_MAX_MOVE_RATIO 0.1f
 /* 云台yaw轴速度 */
-#define GIMBAL_PC_MOVE_RATIO_YAW 0.5f
+#define GIMBAL_PC_YAW_MAX_MOVE_RATIO 0.5f
 
 /* 遥控器拨杆对应档位值 */
 #define RC_UP_VALUE 240
@@ -68,12 +69,11 @@
 #define RC_DN_VALUE 15
 
 /* ---------------------------------- 底盘相关 ---------------------------------- */
-/* 底盘轮距(mm) */
-#define WHEELTRACK        340
-/* 底盘轴距(mm) */
-#define WHEELBASE         388
-/* 底盘轮子周长(mm) */
-#define WHEEL_PERIMETER   471
+#define WHEELTRACK 340//底盘轮距(mm)
+
+#define WHEELBASE 388//底盘轴距(mm)
+
+#define WHEEL_PERIMETER 471//底盘轮子周长(mm)
 
 #define LENGTH_RADIUS 230 //底盘的半径(mm)
 
@@ -81,21 +81,21 @@
 /* 3508底盘电机减速比 */
 #define CHASSIS_DECELE_RATIO (1.0f/19.0f)
 /* 单个电机速度极限，单位是分钟每转 */
-#define MAX_WHEEL_RPM        9000   //8347rpm = 3500mm/s
+#define MAX_MOTOR_RPM        9000   //8347rpm = 3500mm/s
 
 /******** 底盘最大速度设置 *******/
 /* 底盘移动最大速度，单位是毫米每秒 */
-#define MAX_CHASSIS_VX_SPEED 7000
-#define MAX_CHASSIS_VY_SPEED 7000
-
-#define MAX_CHASSIS_VX_SPEED_HIGH 11000
-#define MAX_CHASSIS_VY_SPEED_HIGH 11000
-
-#define MAX_CHASSIS_VX_SPEED_LOW 5000
-#define MAX_CHASSIS_VY_SPEED_LOW 5000
+#define CHASSIS_VX_MAX_M 7000
+#define CHASSIS_VY_MAX_M 7000
+/* 高速档位（mm/s） */
+#define CHASSIS_VX_MAX_H 11000
+#define CHASSIS_VY_MAX_H 11000
+/* 低速档位（mm/s） */
+#define CHASSIS_VX_MAX_L 5000
+#define CHASSIS_VY_MAX_L 5000
 
 /* 底盘旋转最大速度，单位是度每秒 */
-#define MAX_CHASSIS_VR_SPEED 8
+#define CHASSIS_VR_MAX 8
 
 /* --------------------------------- 底盘PID参数 -------------------------------- */
 /* 电机速度环 */

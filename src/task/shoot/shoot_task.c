@@ -110,9 +110,9 @@ void shoot_task_entry(void* argument)
 
         /* 弹仓盖舵机控制 */
         if (shoot_cmd.cover_open == 1)
-            rt_pwm_set(servo_cover_dev, PWM_COVER_CH, 20000000, 2000000);
+            rt_pwm_set(servo_cover_dev, PWM_MAG_COVER_CHN, 20000000, 2000000);
         else
-            rt_pwm_set(servo_cover_dev, PWM_COVER_CH, 20000000, 750000);
+            rt_pwm_set(servo_cover_dev, PWM_MAG_COVER_CHN, 20000000, 750000);
 
         /* 电机控制启动 */
         for (uint8_t i = 0; i < SHT_MOTOR_NUM; i++)
@@ -312,14 +312,14 @@ void shoot_task_entry(void* argument)
  * @brief 舵机初始化
  */
 static void servo_init(){
-    servo_cover_dev=(struct rt_device_pwm *) rt_device_find(PWM_COVER);
+    servo_cover_dev=(struct rt_device_pwm *) rt_device_find(PWM_MAG_COVER);
     if(servo_cover_dev == RT_NULL)
     {
         LOG_E("Can't find cover servo pwm device!");
         return;
     }
-    rt_pwm_set(servo_cover_dev, PWM_COVER_CH, 20000000, 780000);
-    rt_pwm_enable(servo_cover_dev, PWM_COVER_CH);
+    rt_pwm_set(servo_cover_dev, PWM_MAG_COVER_CHN, 20000000, 780000);
+    rt_pwm_enable(servo_cover_dev, PWM_MAG_COVER_CHN);
 }
 
 /**

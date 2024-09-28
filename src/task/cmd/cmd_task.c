@@ -395,9 +395,9 @@ static void remote_to_cmd_pc_DT7(void)
 // TODO: 目前状态机转换较为简单，有很多优化和改进空间
 //遥控器的控制信息转化为标准单位，平移为(mm/s)旋转为(degree/s)
     /*底盘命令*/
-    chassis_cmd.vx =  (float)rc_now->ch1 * CHASSIS_RC_MOVE_RATIO_X / RC_DBUS_MAX_VALUE * MAX_CHASSIS_VX_SPEED + km.vx * CHASSIS_PC_MOVE_RATIO_X;
-    chassis_cmd.vy =  (float)rc_now->ch2 * CHASSIS_RC_MOVE_RATIO_Y / RC_DBUS_MAX_VALUE * MAX_CHASSIS_VY_SPEED + km.vy * CHASSIS_PC_MOVE_RATIO_Y;
-    chassis_cmd.vw =  (float)rc_now->ch3 * CHASSIS_RC_MOVE_RATIO_R / RC_DBUS_MAX_VALUE * MAX_CHASSIS_VR_SPEED + rc_now->mouse.x * CHASSIS_PC_MOVE_RATIO_R;
+    chassis_cmd.vx =  (float)rc_now->ch1 * CHASSIS_RC_X_MAX_MOVE_RATIO / RC_DBUS_MAX_VALUE * CHASSIS_VX_MAX_M + km.vx * CHASSIS_PC_X_MAX_MOVE_RATIO;
+    chassis_cmd.vy =  (float)rc_now->ch2 * CHASSIS_RC_Y_MAX_MOVE_RATIO / RC_DBUS_MAX_VALUE * CHASSIS_VY_MAX_M + km.vy * CHASSIS_PC_Y_MAX_MOVE_RATIO;
+    chassis_cmd.vw =  (float)rc_now->ch3 * CHASSIS_RC_R_MAX_MOVE_RATIO / RC_DBUS_MAX_VALUE * CHASSIS_VR_MAX + rc_now->mouse.x * CHASSIS_PC_R_MAX_MOVE_RATIO;
 
     chassis_cmd.offset_angle = gim_fdb.yaw_relative_angle;
 
@@ -405,8 +405,8 @@ static void remote_to_cmd_pc_DT7(void)
     if (gim_cmd.ctrl_mode==GIMBAL_GYRO)
     {
 
-        gim_cmd.yaw +=   (float)rc_now->ch3 * RC_RATIO * GIMBAL_RC_MOVE_RATIO_YAW + fx * KB_RATIO * GIMBAL_PC_MOVE_RATIO_YAW;
-        gim_cmd.pitch += (float)rc_now->ch4 * RC_RATIO * GIMBAL_RC_MOVE_RATIO_PIT- fy * KB_RATIO * GIMBAL_PC_MOVE_RATIO_PIT;
+        gim_cmd.yaw +=   (float)rc_now->ch3 * RC_RATIO * GIMBAL_RC_YAW_MAX_MOVE_RATIO + fx * KB_RATIO * GIMBAL_PC_YAW_MAX_MOVE_RATIO;
+        gim_cmd.pitch += (float)rc_now->ch4 * RC_RATIO * GIMBAL_RC_PIT_MAX_MOVE_RATIO- fy * KB_RATIO * GIMBAL_PC_PIT_MAX_MOVE_RATIO;
         gyro_yaw_inherit =gim_cmd.yaw;
         gyro_pitch_inherit =gim_cmd.pitch;
         mouse_accumulate_x=0;
@@ -420,7 +420,7 @@ static void remote_to_cmd_pc_DT7(void)
             trans_fdb.pitch=0;
         }
          //mouse_accumulate_x+=fx * KB_RATIO * GIMBAL_PC_MOVE_RATIO_YAW; /*鼠标x轴的自瞄补偿，测试结果建议注释掉暂不使用*/
-        mouse_accumulate_y-=fy * KB_RATIO * GIMBAL_PC_MOVE_RATIO_PIT;
+        mouse_accumulate_y-=fy * KB_RATIO * GIMBAL_PC_PIT_MAX_MOVE_RATIO;
         gim_cmd.yaw = trans_fdb.yaw+gyro_yaw_inherit + mouse_accumulate_x/* + 150 * rc_now->ch3 * RC_RATIO * GIMBAL_RC_MOVE_RATIO_YAW*/;//上位机自瞄
         gim_cmd.pitch = trans_fdb.pitch+gyro_pitch_inherit + mouse_accumulate_y/* +100 * rc_now->ch4 * RC_RATIO * GIMBAL_RC_MOVE_RATIO_PIT */;//上位机自瞄
     }

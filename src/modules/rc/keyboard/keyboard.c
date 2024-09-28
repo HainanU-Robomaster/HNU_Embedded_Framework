@@ -9,7 +9,7 @@
 
 km_control_t km;
 
-int16_t delta_spd = MAX_CHASSIS_VX_SPEED*1.0f/KEY_ACC_TIME*GIMBAL_PERIOD;
+int16_t delta_spd = CHASSIS_VX_MAX_M*1.0f/KEY_ACC_TIME*GIMBAL_PERIOD;
 
 extern ramp_obj_t *km_vx_ramp;//x轴控制斜坡
 extern ramp_obj_t *km_vy_ramp;//y周控制斜坡
@@ -132,22 +132,22 @@ void PC_Handle_kb(void)
 
 //    if(rc_dbus_obj[0].kb.bit.SHIFT)
 //    {
-//        VAL_LIMIT(km.vx, -MAX_CHASSIS_VX_SPEED_HIGH, MAX_CHASSIS_VX_SPEED_HIGH);
-//        VAL_LIMIT(km.vy, -MAX_CHASSIS_VY_SPEED_HIGH, MAX_CHASSIS_VY_SPEED_HIGH);
+//        VAL_LIMIT(km.vx, -CHASSIS_VX_MAX_H, CHASSIS_VX_MAX_H);
+//        VAL_LIMIT(km.vy, -CHASSIS_VY_MAX_H, CHASSIS_VY_MAX_H);
 //    }
 //    else if(rc_dbus_obj[0].kb.bit.CTRL)
 //    {
-//        VAL_LIMIT(km.vx, -MAX_CHASSIS_VX_SPEED_LOW, MAX_CHASSIS_VX_SPEED_LOW);
-//        VAL_LIMIT(km.vy, -MAX_CHASSIS_VY_SPEED_LOW, MAX_CHASSIS_VY_SPEED_LOW);
+//        VAL_LIMIT(km.vx, -CHASSIS_VX_MAX_H, CHASSIS_VX_MAX_H);
+//        VAL_LIMIT(km.vy, -CHASSIS_VY_MAX_H, CHASSIS_VY_MAX_H);
 //    }
 //    else
 //    {
-//        VAL_LIMIT(km.vx, -MAX_CHASSIS_VX_SPEED, MAX_CHASSIS_VX_SPEED);
-//        VAL_LIMIT(km.vy, -MAX_CHASSIS_VY_SPEED, MAX_CHASSIS_VY_SPEED);
+//        VAL_LIMIT(km.vx, -CHASSIS_VX_MAX_M, CHASSIS_VX_MAX_M);
+//        VAL_LIMIT(km.vy, -CHASSIS_VY_MAX_M, CHASSIS_VY_MAX_M);
 //    }
 
-    VAL_LIMIT(km.vx, -MAX_CHASSIS_VX_SPEED, MAX_CHASSIS_VX_SPEED);
-    VAL_LIMIT(km.vy, -MAX_CHASSIS_VY_SPEED, MAX_CHASSIS_VY_SPEED);
+    VAL_LIMIT(km.vx, -CHASSIS_VX_MAX_M, CHASSIS_VX_MAX_M);
+    VAL_LIMIT(km.vy, -CHASSIS_VY_MAX_M, CHASSIS_VY_MAX_M);
 
     key_fsm(&km.lk_sta, rc_dbus_obj[0].mouse.l);
     key_fsm(&km.rk_sta, rc_dbus_obj[0].mouse.r);

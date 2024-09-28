@@ -371,9 +371,9 @@ static void omni_calc(struct chassis_cmd_msg *cmd, int16_t* out_speed)
     wheel_rpm_ratio = 60.0f / (WHEEL_PERIMETER * CHASSIS_DECELE_RATIO);
 
     //限制底盘各方向速度
-    VAL_LIMIT(cmd->vx, -MAX_CHASSIS_VX_SPEED, MAX_CHASSIS_VX_SPEED);  //mm/s
-    VAL_LIMIT(cmd->vy, -MAX_CHASSIS_VY_SPEED, MAX_CHASSIS_VY_SPEED);  //mm/s
-    VAL_LIMIT(cmd->vw, -MAX_CHASSIS_VR_SPEED, MAX_CHASSIS_VR_SPEED);  //rad/s
+    VAL_LIMIT(cmd->vx, -CHASSIS_VX_MAX_M, CHASSIS_VX_MAX_M);  //mm/s
+    VAL_LIMIT(cmd->vy, -CHASSIS_VY_MAX_M, CHASSIS_VY_MAX_M);  //mm/s
+    VAL_LIMIT(cmd->vw, -CHASSIS_VR_MAX, CHASSIS_VR_MAX);  //rad/s
 
     wheel_rpm[0] = ( 0.7071*cmd->vx + 0.7071*cmd->vy + cmd->vw * LENGTH_RADIUS) * wheel_rpm_ratio;//left//x，y方向速度,w底盘转动速度
     wheel_rpm[1] = ( 0.7071*cmd->vx - 0.7071*cmd->vy + cmd->vw * LENGTH_RADIUS) * wheel_rpm_ratio;//forward
@@ -491,9 +491,9 @@ void mecanum_calc(struct chassis_cmd_msg *cmd, int16_t* out_speed)
     float max = 0;
 
     //限制底盘各方向速度
-    VAL_LIMIT(cmd->vx, -MAX_CHASSIS_VX_SPEED, MAX_CHASSIS_VX_SPEED);  //mm/s
-    VAL_LIMIT(cmd->vy, -MAX_CHASSIS_VY_SPEED, MAX_CHASSIS_VY_SPEED);  //mm/s
-    VAL_LIMIT(cmd->vw, -MAX_CHASSIS_VR_SPEED, MAX_CHASSIS_VR_SPEED);  //deg/s
+    VAL_LIMIT(cmd->vx, -CHASSIS_VX_MAX_M, CHASSIS_VX_MAX_M);  //mm/s
+    VAL_LIMIT(cmd->vy, -CHASSIS_VY_MAX_M, CHASSIS_VY_MAX_M);  //mm/s
+    VAL_LIMIT(cmd->vw, -CHASSIS_VR_MAX, CHASSIS_VR_MAX);  //deg/s
 
     wheel_rpm[0] = ( cmd->vx - cmd->vy + cmd->vw * rotate_ratio_f) * wheel_rpm_ratio;
     wheel_rpm[1] = ( cmd->vx + cmd->vy + cmd->vw * rotate_ratio_f) * wheel_rpm_ratio;
