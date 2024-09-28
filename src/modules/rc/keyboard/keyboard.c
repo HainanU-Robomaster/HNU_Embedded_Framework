@@ -137,8 +137,8 @@ void PC_Handle_kb(void)
 //    }
 //    else if(rc_dbus_obj[0].kb.bit.CTRL)
 //    {
-//        VAL_LIMIT(km.vx, -CHASSIS_VX_MAX_H, CHASSIS_VX_MAX_H);
-//        VAL_LIMIT(km.vy, -CHASSIS_VY_MAX_H, CHASSIS_VY_MAX_H);
+//        VAL_LIMIT(km.vx, -CHASSIS_VX_MAX_L, CHASSIS_VX_MAX_L);
+//        VAL_LIMIT(km.vy, -CHASSIS_VY_MAX_L, CHASSIS_VY_MAX_L);
 //    }
 //    else
 //    {
