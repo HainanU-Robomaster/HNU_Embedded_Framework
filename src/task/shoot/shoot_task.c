@@ -143,8 +143,8 @@ void shoot_task_entry(void* argument)
                 break;
 
             case SHOOT_ONE:
-                shoot_motor_ref[RIGHT_FRICTION] = 5000;//摩擦轮常转
-                shoot_motor_ref[LEFT_FRICTION] = -5000;
+                shoot_motor_ref[RIGHT_FRICTION] = SBUS_FRICTION_LAUNCH_SPEED;//摩擦轮常转
+                shoot_motor_ref[LEFT_FRICTION] = -SBUS_FRICTION_LAUNCH_SPEED;
                 /*从自动连发模式切换三连发及单发模式时，要继承总转子角度*/
                 if(total_angle_flag == 0)
                 {
@@ -153,15 +153,15 @@ void shoot_task_entry(void* argument)
                 }
                 if (shoot_cmd.trigger_status == TRIGGER_ON)
                 {
-                    shoot_motor_ref[TRIGGER_MOTOR]= shoot_motor_ref[TRIGGER_MOTOR] + TRIGGER_MOTOR_45_TO_ANGLE * 36;//M2006的减速比为36:1，因此转轴旋转45度，要在转子的基础上乘36倍
+                    shoot_motor_ref[TRIGGER_MOTOR]= shoot_motor_ref[TRIGGER_MOTOR] + TRIGGER_MOTOR_45_TO_ANGLE;
                     shoot_cmd.trigger_status=TRIGGER_OFF;//扳机归零
                 }
                 shoot_fdb.trigger_status=SHOOT_OK;
                 break;
 
             case SHOOT_THREE:
-                shoot_motor_ref[RIGHT_FRICTION] = 5000;//摩擦轮常转
-                shoot_motor_ref[LEFT_FRICTION] = -5000;
+                shoot_motor_ref[RIGHT_FRICTION] = SBUS_FRICTION_LAUNCH_SPEED;//摩擦轮常转
+                shoot_motor_ref[LEFT_FRICTION] = -SBUS_FRICTION_LAUNCH_SPEED;
                 /*从自动连发模式切换三连发及单发模式时，要继承总转子角度*/
                 if(total_angle_flag == 0)
                 {
@@ -170,27 +170,27 @@ void shoot_task_entry(void* argument)
                 }
                 if (shoot_cmd.trigger_status == TRIGGER_ON)
                 {
-                    shoot_motor_ref[TRIGGER_MOTOR]= shoot_motor_ref[TRIGGER_MOTOR] + 3 * TRIGGER_MOTOR_45_TO_ANGLE * 36;//M2006的减速比为36:1，因此转轴旋转45度，要在转子的基础上乘36倍
+                    shoot_motor_ref[TRIGGER_MOTOR]= shoot_motor_ref[TRIGGER_MOTOR] + 3 * TRIGGER_MOTOR_45_TO_ANGLE;
                     shoot_cmd.trigger_status=TRIGGER_OFF;//扳机归零
                 }
                 shoot_fdb.trigger_status=SHOOT_OK;
                 break;
 
             case SHOOT_COUNTINUE:
-                shoot_motor_ref[RIGHT_FRICTION] = 5000;//摩擦轮常转
-                shoot_motor_ref[LEFT_FRICTION] = -5000;
+                shoot_motor_ref[RIGHT_FRICTION] = SBUS_FRICTION_LAUNCH_SPEED;//摩擦轮常转
+                shoot_motor_ref[LEFT_FRICTION] = -SBUS_FRICTION_LAUNCH_SPEED;
                 shoot_motor_ref[TRIGGER_MOTOR] = shoot_cmd.shoot_freq;//自动模式的时候，只用速度环控制拨弹电机
                 if (shoot_cmd.shoot_freq>=3&&shoot_cmd.shoot_freq<=5)
                 {
-                    shoot_motor_ref[TRIGGER_MOTOR] = 3500;//自动模式的时候，只用速度环控制拨弹电机
+                    shoot_motor_ref[TRIGGER_MOTOR] = SBUS_FRICTION_AUTO_SPEED_L;//自动模式的时候，只用速度环控制拨弹电机
                 }
                 else if(shoot_cmd.shoot_freq>=5&&shoot_cmd.shoot_freq<8)
                 {
-                    shoot_motor_ref[TRIGGER_MOTOR] = 5000;
+                    shoot_motor_ref[TRIGGER_MOTOR] = SBUS_FRICTION_LAUNCH_SPEED;
                 }
                 else if(shoot_cmd.shoot_freq>=8&&shoot_cmd.shoot_freq<10)
                 {
-                    shoot_motor_ref[TRIGGER_MOTOR] = 7000;
+                    shoot_motor_ref[TRIGGER_MOTOR] = SBUS_FRICTION_AUTO_SPEED_H;
                 }
                 else
                 {
@@ -201,16 +201,16 @@ void shoot_task_entry(void* argument)
                 break;
 
             case SHOOT_REVERSE:
-                shoot_motor_ref[RIGHT_FRICTION] = 5000;//摩擦轮常转
-                shoot_motor_ref[LEFT_FRICTION] = -5000;
-                shoot_motor_ref[TRIGGER_MOTOR]=  -2500;
+                shoot_motor_ref[RIGHT_FRICTION] = SBUS_FRICTION_LAUNCH_SPEED;//摩擦轮常转
+                shoot_motor_ref[LEFT_FRICTION] = -SBUS_FRICTION_LAUNCH_SPEED;
+                shoot_motor_ref[TRIGGER_MOTOR]=  -SBUS_SHOOT_REVERSE_SPEED;
                 total_angle_flag = 0;
                 break;
 
             case SHOOT_AUTO:
-                shoot_motor_ref[RIGHT_FRICTION] = 5000;//摩擦轮常转
-                shoot_motor_ref[LEFT_FRICTION] = -5000;
-                shoot_motor_ref[TRIGGER_MOTOR]=  -2500;
+                shoot_motor_ref[RIGHT_FRICTION] = SBUS_FRICTION_LAUNCH_SPEED;//摩擦轮常转
+                shoot_motor_ref[LEFT_FRICTION] = -SBUS_FRICTION_LAUNCH_SPEED;
+                shoot_motor_ref[TRIGGER_MOTOR]=  -SBUS_SHOOT_REVERSE_SPEED;
                 total_angle_flag = 0;
                 break;
 
@@ -223,13 +223,13 @@ void shoot_task_entry(void* argument)
                 break;
         }
 #endif
-        /*dubs遥控器*/
+        /*DBUS遥控器*/
 
         /*开关摩擦轮*/
         if (shoot_cmd.friction_status==1)
         {
-            shoot_motor_ref[RIGHT_FRICTION] =-7000;//摩擦轮常转
-            shoot_motor_ref[LEFT_FRICTION] = 7000;
+            shoot_motor_ref[RIGHT_FRICTION] = -DBUS_FRICTION_LAUNCH_SPEED;//摩擦轮常转
+            shoot_motor_ref[LEFT_FRICTION] = DBUS_FRICTION_LAUNCH_SPEED;
             /*从自动连发模式切换三连发及单发模式时，要继承总转子角度*/
         }
         else
@@ -256,7 +256,7 @@ void shoot_task_entry(void* argument)
             shoot_fdb.trigger_status=SHOOT_WAITING;
             if (shoot_cmd.trigger_status == TRIGGER_ON)
             {
-                shoot_motor_ref[TRIGGER_MOTOR]= shoot_motor_ref[TRIGGER_MOTOR] + TRIGGER_MOTOR_45_TO_ANGLE * 36;//M2006的减速比为36:1，因此转轴旋转45度，要在转子的基础上乘36倍
+                shoot_motor_ref[TRIGGER_MOTOR]= shoot_motor_ref[TRIGGER_MOTOR] + TRIGGER_MOTOR_45_TO_ANGLE ;
                 shoot_fdb.trigger_status=SHOOT_OK;
             }
             break;
@@ -271,7 +271,7 @@ void shoot_task_entry(void* argument)
                 shoot_fdb.trigger_status=SHOOT_WAITING;
             if (shoot_cmd.trigger_status == TRIGGER_ON)
             {
-                shoot_motor_ref[TRIGGER_MOTOR]= shoot_motor_ref[TRIGGER_MOTOR] + 3 * TRIGGER_MOTOR_45_TO_ANGLE * 36;//M2006的减速比为36:1，因此转轴旋转45度，要在转子的基础上乘36倍
+                shoot_motor_ref[TRIGGER_MOTOR]= shoot_motor_ref[TRIGGER_MOTOR] + 3 * TRIGGER_MOTOR_45_TO_ANGLE;
                 shoot_fdb.trigger_status=SHOOT_OK;
             }
             break;
@@ -282,7 +282,7 @@ void shoot_task_entry(void* argument)
             break;
 
         case SHOOT_REVERSE:
-            shoot_motor_ref[TRIGGER_MOTOR]=  -3000;
+            shoot_motor_ref[TRIGGER_MOTOR]= -DBUS_SHOOT_REVERSE_SPEED;
             total_angle_flag = SHOOT_ANGLE_CONTINUE;
             break;
 
