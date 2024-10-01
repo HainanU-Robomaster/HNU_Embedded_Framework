@@ -226,7 +226,6 @@
 /** SBUS遥控器发射速度 **/
 #define SBUS_FRICTION_LAUNCH_SPEED 5000
 /* 拨弹电机参数*/
-#define
 #define SBUS_SHOOT_REVERSE_SPEED 2500
 /** COUNTINUE模式参数 **/
 #define SBUS_FRICTION_AUTO_SPEED_L 3500
