@@ -62,6 +62,7 @@ motor_config_t gimbal_motor_config[GIM_MOTOR_NUM] = {
         }
 };
 
+
 static rt_int16_t yaw_motor_relive, pitch_motor_relive;  // 电机相对于归中值的角度
 
 static ramp_obj_t *yaw_ramp;//yaw 轴云台控制斜坡
@@ -104,7 +105,7 @@ void gimbal_thread_entry(void *argument)
 
         // 云台本身相对于归中值的角度，加负号
         yaw_motor_relive = -(rt_int16_t)get_relative_pos(gim_motor[YAW]->measure.ecd, CENTER_ECD_YAW) / 22.75f;
-        pitch_motor_relive = (rt_int16_t )get_relative_pos(gim_motor[PITCH]->measure.ecd, CENTER_ECD_PITCH) / 22.75f;
+        pitch_motor_relive = -(rt_int16_t )get_relative_pos(gim_motor[PITCH]->measure.ecd, CENTER_ECD_PITCH) / 22.75f;
 
 //        if((gim_cmd.ctrl_mode==GIMBAL_GYRO||GIMBAL_AUTO)&&gim_fdb.back_mode==BACK_IS_OK)
 //        {
@@ -333,7 +334,7 @@ static rt_int16_t motor_control_yaw(dji_motor_measure_t measure){
     {
         /* 注意负号 */
         pid_out_angle = pid_calculate(pid_angle, get_angle, gim_motor_ref[YAW]);
-        send_data = -pid_calculate(pid_speed, get_speed, pid_out_angle);      // 电机转动正方向与imu相反
+        send_data = pid_calculate(pid_speed, get_speed, pid_out_angle);      // 电机转动正方向与imu相反
     }
 
     return send_data;

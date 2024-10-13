@@ -36,12 +36,14 @@ static struct rt_device_pwm *servo_cover_dev;  // 弹仓盖舵机
 static int total_angle_flag=SHOOT_ANGLE_CONTINUE;
 
 /*发射模块电机使用数量*/
-#define SHT_MOTOR_NUM 3
+//#define SHT_MOTOR_NUM 3
+#define SHT_MOTOR_NUM 4
 
 /*发射模块电机编号：分别为左摩擦轮电机 右摩擦轮电机 拨弹电机*/
 #define RIGHT_FRICTION 0
 #define LEFT_FRICTION 1
-#define TRIGGER_MOTOR 2
+#define MIDDLE_FRICTION 2
+#define TRIGGER_MOTOR 3
 
 /*pid环数结构体*/
 static struct shoot_controller_t{
@@ -64,7 +66,13 @@ motor_config_t shoot_motor_config[SHT_MOTOR_NUM] ={
         .controller = &sht_controller[LEFT_FRICTION],
     },
     {
-        .motor_type = M2006,
+        .motor_type = M3508,
+        .can_name = CAN_GIMBAL,
+        .rx_id = MIDDLE_FRICTION_MOTOR_ID,
+        .controller = &sht_controller[MIDDLE_FRICTION],
+    },
+    {
+        .motor_type = M3508,
         .can_name = CAN_GIMBAL,
         .rx_id = TRIGGER_MOTOR_ID,
         .controller = &sht_controller[TRIGGER_MOTOR],
@@ -76,8 +84,9 @@ static float shoot_motor_ref[SHT_MOTOR_NUM]; // 电机控制期望值
 
 /*函数声明*/
 static void shoot_motor_init();
-static void servo_init();
+//static void servo_init();
 static rt_int16_t motor_control_right(dji_motor_measure_t measure);
+static rt_int16_t motor_control_middle(dji_motor_measure_t measure);
 static rt_int16_t motor_control_left(dji_motor_measure_t measure);
 static rt_int16_t motor_control_trigger(dji_motor_measure_t measure);
 
@@ -96,7 +105,7 @@ void shoot_task_entry(void* argument)
     shoot_motor_init();
     shoot_pub_init();
     shoot_sub_init();
-    servo_init();
+//    servo_init();
 /*----------------------射击状态初始化----------------------------------*/
     shoot_cmd.ctrl_mode=SHOOT_STOP;
     shoot_cmd.trigger_status=TRIGGER_OFF;
@@ -228,71 +237,73 @@ void shoot_task_entry(void* argument)
         /*开关摩擦轮*/
         if (shoot_cmd.friction_status==1)
         {
-            shoot_motor_ref[RIGHT_FRICTION] =-7000;//摩擦轮常转
-            shoot_motor_ref[LEFT_FRICTION] = 7000;
+            shoot_motor_ref[RIGHT_FRICTION] = 8000;//摩擦轮常转
+            shoot_motor_ref[MIDDLE_FRICTION] = 8000;
+            shoot_motor_ref[LEFT_FRICTION] = -8000;
             /*从自动连发模式切换三连发及单发模式时，要继承总转子角度*/
         }
         else
         {
             shoot_motor_ref[TRIGGER_MOTOR] = 0;
             shoot_motor_ref[RIGHT_FRICTION] =0;
+            shoot_motor_ref[MIDDLE_FRICTION] = 0;
             shoot_motor_ref[LEFT_FRICTION] = 0;
             total_angle_flag=SHOOT_ANGLE_CONTINUE;
         }
-
         switch (shoot_cmd.ctrl_mode)
         {
-        case SHOOT_STOP:
-            shoot_motor_ref[TRIGGER_MOTOR] = 0;
-            total_angle_flag=SHOOT_ANGLE_CONTINUE;
-            break;
+            case SHOOT_STOP:
+                shoot_motor_ref[TRIGGER_MOTOR] = 0;
+                total_angle_flag=0;
+                break;
 
-        case SHOOT_ONE:
-            if(total_angle_flag == SHOOT_ANGLE_CONTINUE)
-            {
-                shoot_motor_ref[TRIGGER_MOTOR]= sht_motor[TRIGGER_MOTOR]->measure.total_angle;
-                total_angle_flag=SHOOT_ANGLE_SINGLE;
-            }
-            shoot_fdb.trigger_status=SHOOT_WAITING;
-            if (shoot_cmd.trigger_status == TRIGGER_ON)
-            {
-                shoot_motor_ref[TRIGGER_MOTOR]= shoot_motor_ref[TRIGGER_MOTOR] + TRIGGER_MOTOR_45_TO_ANGLE * 36;//M2006的减速比为36:1，因此转轴旋转45度，要在转子的基础上乘36倍
+            case SHOOT_ONE:
+                if(total_angle_flag == 0)
+                {
+                    shoot_motor_ref[TRIGGER_MOTOR]= sht_motor[TRIGGER_MOTOR]->measure.total_angle;
+                    total_angle_flag=1;
+                }
+                if (shoot_cmd.trigger_status == TRIGGER_ON)
+                {
+                    shoot_motor_ref[TRIGGER_MOTOR]= shoot_motor_ref[TRIGGER_MOTOR] + TRIGGER_MOTOR_51_TO_ANGLE * 19;//M3508的减速比为 19:1，因此转轴旋转51.43度，要在转子的基础上乘19倍
+                    shoot_cmd.trigger_status=TRIGGER_OFF;//扳机归零
+                }
                 shoot_fdb.trigger_status=SHOOT_OK;
-            }
-            break;
+                break;
 
-        case SHOOT_THREE:
-            /*从自动连发模式切换三连发及单发模式时，要继承总转子角度*/
-            if(total_angle_flag == SHOOT_ANGLE_CONTINUE)
-            {
-                shoot_motor_ref[TRIGGER_MOTOR]= sht_motor[TRIGGER_MOTOR]->measure.total_angle;
-                total_angle_flag = SHOOT_ANGLE_SINGLE;
-            }
-                shoot_fdb.trigger_status=SHOOT_WAITING;
-            if (shoot_cmd.trigger_status == TRIGGER_ON)
-            {
-                shoot_motor_ref[TRIGGER_MOTOR]= shoot_motor_ref[TRIGGER_MOTOR] + 3 * TRIGGER_MOTOR_45_TO_ANGLE * 36;//M2006的减速比为36:1，因此转轴旋转45度，要在转子的基础上乘36倍
+            case SHOOT_THREE:
+                /*从自动连发模式切换三连发及单发模式时，要继承总转子角度*/
+                if(total_angle_flag == 0)
+                {
+                    shoot_motor_ref[TRIGGER_MOTOR]= sht_motor[TRIGGER_MOTOR]->measure.total_angle;
+                    total_angle_flag = 1;
+                }
+                if (shoot_cmd.trigger_status == TRIGGER_ON)
+                {
+                    shoot_motor_ref[TRIGGER_MOTOR]= shoot_motor_ref[TRIGGER_MOTOR] + TRIGGER_MOTOR_51_TO_ANGLE * 19;//M3508的减速比为 19:1，因此转轴旋转51.43度，要在转子的基础上乘19倍
+                    shoot_cmd.trigger_status=TRIGGER_OFF;//扳机归零
+                }
                 shoot_fdb.trigger_status=SHOOT_OK;
-            }
-            break;
+                break;
 
-        case SHOOT_COUNTINUE:
-            shoot_motor_ref[TRIGGER_MOTOR] = shoot_cmd.shoot_freq;//自动模式的时候，只用速度环控制拨弹电机
-            total_angle_flag = SHOOT_ANGLE_CONTINUE;
-            break;
+            case SHOOT_COUNTINUE:
+                shoot_motor_ref[TRIGGER_MOTOR] = shoot_cmd.shoot_freq;//自动模式的时候，只用速度环控制拨弹电机
+                total_angle_flag = 0;
+                shoot_fdb.trigger_status= SHOOT_OK;
+                break;
 
-        case SHOOT_REVERSE:
-            shoot_motor_ref[TRIGGER_MOTOR]=  -3000;
-            total_angle_flag = SHOOT_ANGLE_CONTINUE;
-            break;
+            case SHOOT_REVERSE:
+                shoot_motor_ref[TRIGGER_MOTOR]=  -2500;
+                total_angle_flag = 0;
+                break;
 
-        default:
-            for (uint8_t i = 0; i < SHT_MOTOR_NUM; i++)
-            {
-                dji_motor_relax(sht_motor[i]); // 错误情况电机全部松电
-            }
-            shoot_fdb.trigger_status=SHOOT_ERR;
-            break;
+            default:
+                for (uint8_t i = 0; i < SHT_MOTOR_NUM; i++)
+                {
+                    dji_motor_relax(sht_motor[i]); // 错误情况电机全部松电
+                }
+                shoot_fdb.trigger_status=SHOOT_ERR;
+                break;
         }
         /* 更新发布该线程的msg */
         shoot_pub_push();
@@ -311,16 +322,16 @@ void shoot_task_entry(void* argument)
 /**
  * @brief 舵机初始化
  */
-static void servo_init(){
-    servo_cover_dev=(struct rt_device_pwm *) rt_device_find(PWM_COVER);
-    if(servo_cover_dev == RT_NULL)
-    {
-        LOG_E("Can't find cover servo pwm device!");
-        return;
-    }
-    rt_pwm_set(servo_cover_dev, PWM_COVER_CH, 20000000, 780000);
-    rt_pwm_enable(servo_cover_dev, PWM_COVER_CH);
-}
+//static void servo_init(){
+//    servo_cover_dev=(struct rt_device_pwm *) rt_device_find(PWM_COVER);
+//    if(servo_cover_dev == RT_NULL)
+//    {
+//        LOG_E("Can't find cover servo pwm device!");
+//        return;
+//    }
+//    rt_pwm_set(servo_cover_dev, PWM_COVER_CH, 20000000, 780000);
+//    rt_pwm_enable(servo_cover_dev, PWM_COVER_CH);
+//}
 
 /**
  * @brief shoot 线程电机初始化
@@ -336,6 +347,10 @@ static void shoot_motor_init(){
                                                           (PID_Trapezoid_Intergral | PID_Integral_Limit | PID_Derivative_On_Measurement));
     sht_controller[LEFT_FRICTION].pid_speed = pid_register(&left_speed_config);
 
+    /* ------------------------------------------- middle_friction 中摩擦轮电机------------------------------------------------- */
+    pid_config_t middle_speed_config = INIT_PID_CONFIG(MIDDLE_KP_V,  MIDDLE_KI_V, MIDDLE_KD_V , MIDDLE_INTEGRAL_V, MIDDLE_MAX_V,
+                                                     (PID_Trapezoid_Intergral | PID_Integral_Limit | PID_Derivative_On_Measurement));
+    sht_controller[MIDDLE_FRICTION].pid_speed = pid_register(&middle_speed_config);
 /* ------------------------------------------------  拨弹电机------------------------------------------------------------------------- */
     pid_config_t toggle_speed_config = INIT_PID_CONFIG(TRIGGER_KP_V  , TRIGGER_KI_V , TRIGGER_KD_V  , TRIGGER_INTEGRAL_V, TRIGGER_MAX_V ,
                                                        (PID_Trapezoid_Intergral | PID_Integral_Limit | PID_Derivative_On_Measurement));
@@ -347,6 +362,7 @@ static void shoot_motor_init(){
 /* ---------------------------------- shoot电机初注册---------------------------------------------------------------------------------------- */
     sht_motor[TRIGGER_MOTOR] = dji_motor_register(&shoot_motor_config[TRIGGER_MOTOR], motor_control_trigger);
     sht_motor[LEFT_FRICTION] = dji_motor_register(&shoot_motor_config[LEFT_FRICTION], motor_control_left);
+    sht_motor[MIDDLE_FRICTION] = dji_motor_register(&shoot_motor_config[MIDDLE_FRICTION], motor_control_middle);
     sht_motor[RIGHT_FRICTION] = dji_motor_register(&shoot_motor_config[RIGHT_FRICTION], motor_control_right);
 }
 
@@ -358,11 +374,18 @@ static rt_int16_t motor_control_right(dji_motor_measure_t measure)
     return set;
 }
 
-/*右摩擦轮电机控制算法*/
+/*左摩擦轮电机控制算法*/
 static rt_int16_t motor_control_left(dji_motor_measure_t measure)
 {
     static rt_int16_t set = 0;
-    set = (int16_t) pid_calculate(sht_controller[LEFT_FRICTION].pid_speed, measure.speed_rpm, shoot_motor_ref[LEFT_FRICTION]/*left_speed*/);
+    set = (int16_t) pid_calculate(sht_controller[LEFT_FRICTION].pid_speed, measure.speed_rpm, shoot_motor_ref[LEFT_FRICTION]);
+    return set;
+}
+/*中摩擦轮电机控制算法*/
+static rt_int16_t motor_control_middle(dji_motor_measure_t measure)
+{
+    static rt_int16_t set = 0;
+    set = (int16_t) pid_calculate(sht_controller[MIDDLE_FRICTION].pid_speed, measure.speed_rpm, shoot_motor_ref[MIDDLE_FRICTION]);
     return set;
 }
 

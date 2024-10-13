@@ -470,7 +470,8 @@ static void remote_to_cmd_pc_DT7(void)
         }
         else
         {
-            if (gim_fdb.back_mode == BACK_IS_OK)
+            if (gim_fdb.back_mode == 1)
+//            if (gim_fdb.back_mode == BACK_IS_OK)
             {/* 判断归中是否完成 */
                 gim_cmd.ctrl_mode = GIMBAL_AUTO;
                 chassis_cmd.ctrl_mode = CHASSIS_FOLLOW_GIMBAL;
@@ -503,11 +504,11 @@ static void remote_to_cmd_pc_DT7(void)
     }
     if (chassis_cmd.ctrl_mode==CHASSIS_SPIN)
     {
-        chassis_cmd.vw=4.5+2*referee_fdb.robot_status.chassis_power_limit/60;/*!小陀螺转速，随着功率限制提升加快转速*/
+        chassis_cmd.vw=3.5;//4.5+2*referee_fdb.robot_status.chassis_power_limit/60;/*!小陀螺转速，随着功率限制提升加快转速*/
     }
     /*TODO:--------------------------------------------------发射模块状态机--------------------------------------------------------------*/
     /*!-----------------------------------------开关摩擦轮--------------------------------------------*/
-
+    /*-----------------------------------------开关摩擦轮--------------------------------------------*/
     if(km.f_sta==KEY_PRESS_ONCE)
     {
         key_f_status=-key_f_status;
@@ -521,68 +522,38 @@ static void remote_to_cmd_pc_DT7(void)
         shoot_cmd.friction_status=0;
     }
     /*!------------------------------------------------------------扳机连发模式---------------------------------------------------------*/
-    if (km.v_sta==KEY_PRESS_ONCE)
-    {
-        key_v_status=-key_v_status;
-    }
-    if (key_v_status==-1)
+    if((rc_now->mouse.l==1||rc_now->wheel>=200)&&(shoot_cmd.friction_status==1)/*&&(referee_fdb.power_heat_data.shooter_17mm_1_barrel_heat < (referee_fdb.robot_status.shooter_barrel_heat_limit-10))*/)
     {
         shoot_cmd.ctrl_mode=SHOOT_COUNTINUE;
+        shoot_cmd.shoot_freq=3000;
+
+//        if(((int16_t)referee_fdb.robot_status.shooter_barrel_heat_limit-(int16_t)referee_fdb.power_heat_data.shooter_17mm_1_barrel_heat)<=30)
+//        {
+//            shoot_cmd.shoot_freq=0;
+//        }
+//
+//        if (km.shift_sta==KEY_PRESS_LONG)
+//        {
+//            shoot_cmd.shoot_freq=4500;
+//        }
+//
+//        if(referee_fdb.robot_status.shooter_barrel_heat_limit==0)
+//        {
+//            shoot_cmd.shoot_freq=2500;
+//        }
+//        else
+//        {
+//
+//        }
+
     }
     else
     {
-        shoot_cmd.ctrl_mode=SHOOT_ONE;
-    }
-    switch (shoot_cmd.ctrl_mode)
-    {
-        case SHOOT_ONE:
-            if (rc_now->mouse.l==1&&shoot_cmd.friction_status==1)
-            {
-                if (shoot_fdb.trigger_status==SHOOT_WAITING&&trigger_flag==0)
-                {
-                    shoot_cmd.trigger_status=TRIGGER_ON;
-                    trigger_flag=1;
-                }
-                else if(shoot_fdb.trigger_status==SHOOT_OK)
-                {
-                    shoot_cmd.trigger_status=TRIGGER_ING;
-                }
-
-            }
-            else
-            {
-                shoot_cmd.trigger_status=TRIGGER_OFF;
-            }
-            if (rc_now->mouse.l==0)
-            {
-                trigger_flag=0;
-            }
-
-            break;
-
-        case SHOOT_COUNTINUE:
-            if((rc_now->mouse.l==1||rc_now->wheel>=200)&&shoot_cmd.friction_status==1&&(referee_fdb.power_heat_data.shooter_id1_17mm_cooling_heat < (referee_fdb.robot_status.shooter_barrel_heat_limit-10)))
-            {
-                shoot_cmd.shoot_freq=4500;
-                /*!扳机连发功率限制如果未挂载功率限制，发射频率置为一个合适速度*/
-                if(((int16_t)referee_fdb.robot_status.shooter_barrel_heat_limit-(int16_t)referee_fdb.power_heat_data.shooter_id1_17mm_cooling_heat)<=30)
-                {
-                    shoot_cmd.shoot_freq=0;
-                }
-                if(referee_fdb.robot_status.shooter_barrel_heat_limit==0)
-                {
-                    shoot_cmd.shoot_freq=3000;
-                }
-            }
-            else
-            {
-                shoot_cmd.shoot_freq=0;
-            }
-            break;
-
+        shoot_cmd.ctrl_mode=SHOOT_COUNTINUE;
+        shoot_cmd.shoot_freq=0;
     }
     /*-------------------------------------------------------------堵弹反转检测------------------------------------------------------------*/
-    if (shoot_fdb.trigger_motor_current>=9500||reverse_cnt!=0)/*M2006电机的堵转电流是10000*/
+    if (shoot_fdb.trigger_motor_current>=30000||reverse_cnt!=0)/*M3508电机的堵转电流是2500*/
     {
         shoot_cmd.ctrl_mode=SHOOT_REVERSE;
         if (reverse_cnt<120)

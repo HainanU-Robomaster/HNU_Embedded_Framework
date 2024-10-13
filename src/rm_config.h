@@ -75,7 +75,8 @@
 /* 底盘轮子周长(mm) */
 #define WHEEL_PERIMETER   471
 
-#define LENGTH_RADIUS 230 //底盘的半径(mm)
+#define LENGTH_A 290 //底盘长的一半(mm)
+#define LENGTH_B 265 //底盘宽的一半(mm)
 
 /******** 底盘电机使用3508 *******/
 /* 3508底盘电机减速比 */
@@ -122,12 +123,12 @@
 #define SIDEWAYS_ANGLE   36
 #define CENTER_ECD_YAW   3818         //云台yaw轴编码器归中值(侧身)
 #else
-#define CENTER_ECD_YAW   7913         //云台yaw轴编码器归中值
+#define CENTER_ECD_YAW   5361         //云台yaw轴编码器归中值
 #define SIDEWAYS_ANGLE   0
 #endif
 
 
-#define CENTER_ECD_PITCH 2717         //云台pitch轴编码器归中值
+#define CENTER_ECD_PITCH 6442         //云台pitch轴编码器归中值
 /* pitch轴最大仰角 */
 #define PIT_ANGLE_MAX        30.0f
 /* pitch轴最大俯角 */
@@ -143,7 +144,7 @@
 /* imu速度环 */
 #define YAW_KP_V_IMU             5000
 #define YAW_KI_V_IMU             0
-#define YAW_KD_V_IMU             0.5
+#define YAW_KD_V_IMU             0.8
 #define YAW_INTEGRAL_V_IMU       0
 #define YAW_MAX_V_IMU            30000
 /* imu角度环 */
@@ -167,7 +168,7 @@
 
 /* 云台PITCH轴电机PID参数 */
 /* imu速度环 */
-#define PITCH_KP_V_IMU           8000
+#define PITCH_KP_V_IMU           9000//8000
 #define PITCH_KI_V_IMU           4000
 #define PITCH_KD_V_IMU           0.001
 #define PITCH_INTEGRAL_V_IMU     1500
@@ -197,9 +198,11 @@
 // TODO: 实际值待整定
 #define RIGHT_FRICTION_MOTOR_ID     0x201
 #define LEFT_FRICTION_MOTOR_ID   0x202
-#define TRIGGER_MOTOR_ID  0x203
+#define MIDDLE_FRICTION_MOTOR_ID   0x203
+#define TRIGGER_MOTOR_ID  0x204 //0x205
 
-#define TRIGGER_MOTOR_45_TO_ANGLE 45
+
+#define TRIGGER_MOTOR_51_TO_ANGLE 51.43f
 /* -------------------------------- 发射电机PID参数 ------------------------------- */
 // TODO: 速度期望应改为变量应对速度切换。初次参数调整已完成
 /* 右摩擦轮M3508电机PID参数 */
@@ -218,8 +221,16 @@
 #define LEFT_INTEGRAL_V     50
 #define LEFT_MAX_V          30000
 
+/* 中摩擦轮M3508电机PID参数 */
+/* 速度环 */
+#define MIDDLE_KP_V           23
+#define MIDDLE_KI_V           0.1
+#define MIDDLE_KD_V           0.001f
+#define MIDDLE_INTEGRAL_V     50
+#define MIDDLE_MAX_V          30000
+
 // TODO：PID参数初次微调已完成，期待后续微调
-/* 拨弹电机M2006电机PID参数 */
+/* 拨弹电机M3508电机PID参数 */
 /* 速度环 */
 #define TRIGGER_KP_V           10
 #define TRIGGER_KI_V           5

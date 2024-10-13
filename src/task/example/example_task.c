@@ -12,7 +12,7 @@
 #define DBG_TAG   "rm.task"
 #define DBG_LVL DBG_INFO
 #include <rtdbg.h>
-
+int32_t a=100;
 static struct chassis_controller_t{
     pid_obj_t *speed_pid;
 }chassis_controller;
@@ -27,13 +27,15 @@ static dji_motor_object_t *gimbal_motor;
 
 static rt_int16_t chassis_control(dji_motor_measure_t measure){
     static rt_int16_t set = 0;
-    set = pid_calculate(chassis_controller.speed_pid, measure.speed_rpm, 1000);
+    set = 1000;
+
+//    set = pid_calculate(chassis_controller.speed_pid, measure.speed_rpm, 1000);
     return set;
 }
 
 static rt_int16_t gimbal_control(dji_motor_measure_t measure){
     static rt_int16_t set = 0;
-    set = pid_calculate(gimbal_controlelr.speed_pid, measure.speed_rpm, 0);
+    set = pid_calculate(gimbal_controlelr.speed_pid, measure.speed_rpm, a);
     return set;
 }
 
@@ -61,13 +63,13 @@ static void example_init()
     motor_config_t chassis_motor_config = {
             .motor_type = M3508,
             .can_name = CAN_CHASSIS,
-            .rx_id = 0x201,
+            .rx_id = 0x203,
             .controller = &chassis_controller,
     };
     motor_config_t gimbal_motor_config = {
             .motor_type = GM6020,
-            .can_name = CAN_GIMBAL,
-            .rx_id = 0x206,
+            .can_name = CAN_CHASSIS,
+            .rx_id = 0x208,
             .controller = &gimbal_controlelr,
     };
     chassis_motor = dji_motor_register(&chassis_motor_config, chassis_control);
