@@ -24,10 +24,6 @@
 /* kservice optimization */
 
 #define RT_KSERVICE_USING_STDLIB
-#define RT_USING_DEBUG
-#define RT_DEBUGING_COLOR
-#define RT_DEBUGING_CONTEXT
-#define RT_DEBUGING_INIT
 
 /* Inter-Thread communication */
 
@@ -89,6 +85,7 @@
 #define RT_SERIAL_USING_DMA
 #define RT_SERIAL_RB_BUFSZ 64
 #define RT_USING_CAN
+#define RT_USING_HWTIMER
 #define RT_USING_I2C
 #define RT_USING_I2C_BITOPS
 #define RT_USING_PIN
@@ -97,6 +94,18 @@
 
 /* Using USB */
 
+#define RT_USING_USB
+#define RT_USING_USB_DEVICE
+#define RT_USBD_THREAD_STACK_SZ 4096
+#define USB_VENDOR_ID 0x0FFE
+#define USB_PRODUCT_ID 0x0001
+#define _RT_USB_DEVICE_CDC
+#define RT_USB_DEVICE_CDC
+#define RT_VCOM_TASK_STK_SIZE 512
+#define RT_CDC_RX_BUFSIZE 128
+#define RT_VCOM_SERNO "32021919830108"
+#define RT_VCOM_SER_LEN 14
+#define RT_VCOM_TX_TIMEOUT 1000
 
 /* C/C++ and POSIX layer */
 
@@ -135,6 +144,15 @@
 
 
 /* Wiced WiFi */
+
+
+/* CYW43012 WiFi */
+
+
+/* BL808 WiFi */
+
+
+/* CYW43439 WiFi */
 
 
 /* IoT Cloud */
@@ -178,13 +196,21 @@
 
 /* peripheral libraries and drivers */
 
+/* HAL & SDK Drivers */
+
+/* STM32 HAL & SDK Drivers */
+
+
+/* Infineon HAL Packages */
+
+
+/* Kendryte SDK */
+
+
 /* sensors drivers */
 
 
 /* touch drivers */
-
-
-/* Kendryte SDK */
 
 
 /* AI packages */
@@ -255,6 +281,8 @@
 #define BSP_USING_CAN
 #define BSP_USING_CAN1
 #define BSP_USING_CAN2
+#define BSP_USING_TIM
+#define BSP_USING_TIM4
 #define BSP_USING_PWM
 #define BSP_USING_PWM1
 #define BSP_USING_PWM1_CH2
@@ -268,6 +296,7 @@
 
 #define BSP_I2C1_SCL_PIN 8
 #define BSP_I2C1_SDA_PIN 41
+#define BSP_USING_USBD
 
 /* RoboMaster Modules */
 
@@ -279,12 +308,15 @@
 #define BSP_USING_IST8310
 #define BSP_USING_IMU
 #define BSP_USING_BMI088
-#define BSP_USING_RC_SBUS
+#define BSP_USING_RC_DBUS
+#define BSP_USING_RC_KEYBOARD
+#define BSP_USING_REFEREE
 
 /* RoboMaster Algorithms */
 
 #define BSP_USING_PID
 #define BSP_USING_QUATERNIONESF
+#define BSP_USING_FILTER
 #define BSP_USING_KALMAN_FILTER
 #define BSP_USING_RAMP
 
@@ -298,6 +330,10 @@
 #define BSP_USING_GIMBAL_TASK
 #define BSP_USING_TRANSMISSION_TASK
 #define BSP_USING_SHOOT_TASK
+#define BSP_USING_REFEREE_TASK
+
+/* RoboMaster Robot Types */
+
 
 /* Board extended module Drivers */
 

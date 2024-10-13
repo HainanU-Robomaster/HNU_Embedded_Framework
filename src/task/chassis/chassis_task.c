@@ -11,20 +11,27 @@
 
 #define DBG_TAG   "rm.task"
 #define DBG_LVL DBG_INFO
+#define HWTIMER_DEV_NAME   "timer4"     /* 定时器名称 */
 #include <rtdbg.h>
-
-// TODO: 移植底盘运动逆解算
 
 /* -------------------------------- 线程间通讯话题相关 ------------------------------- */
 static struct chassis_cmd_msg chassis_cmd;
+static struct referee_fdb_msg referee_fdb;
+static struct chassis_fdb_msg chassis_fdb;
+static struct ins_msg ins_data;
+
 static publisher_t *pub_chassis;
-static subscriber_t *sub_cmd;
+static subscriber_t *sub_cmd,*sub_ins;
+static subscriber_t *sub_referee;
 
 static void chassis_pub_init(void);
 static void chassis_sub_init(void);
 static void chassis_pub_push(void);
 static void chassis_sub_pull(void);
 
+/* -------------------------------- 裁判系统底盘功率相关 ------------------------------- */
+//extern robot_status_t robot_status;
+//extern ext_power_heat_data_t power_heat_data_t;
 /* --------------------------------- 电机控制相关 --------------------------------- */
 static pid_obj_t *follow_pid; // 用于底盘跟随云台计算vw
 static pid_config_t chassis_follow_config = INIT_PID_CONFIG(CHASSIS_KP_V_FOLLOW, CHASSIS_KI_V_FOLLOW, CHASSIS_KD_V_FOLLOW, CHASSIS_INTEGRAL_V_FOLLOW, CHASSIS_MAX_V_FOLLOW,
@@ -38,19 +45,32 @@ static dji_motor_object_t *chassis_motor[4];  // 底盘电机实例
 static int16_t motor_ref[4]; // 电机控制期望值
 
 static void chassis_motor_init();
-
+/*定时器初始化*/
+static int TIM_Init(void);
+/*里程计所需数据*/
+static float x_ch, y_ch, w_ch, x_gim, y_gim,vw_ch,vy_ch,vx_ch,vx_gim,vy_gim,x_sin_w,x_cos_w,y_sin_w,y_cos_w;
 /* --------------------------------- 底盘运动学解算 --------------------------------- */
 /* 根据宏定义选择的底盘类型使能对应的解算函数 */
 #ifdef BSP_CHASSIS_OMNI_MODE
 static void omni_calc(struct chassis_cmd_msg *cmd, int16_t* out_speed);
 static void (*chassis_calc_moto_speed)(struct chassis_cmd_msg *cmd, int16_t* out_speed) = omni_calc;
+static struct chassis_real_speed_t omni_get_speed(dji_motor_object_t *chassis_motor[4]);
 #endif /* BSP_CHASSIS_OMNI_MODE */
 #ifdef BSP_CHASSIS_MECANUM_MODE
-void mecanum_calc(struct chassis_cmd_msg *cmd, int16_t* out_speed);
-void (*chassis_calc_moto_speed)(struct chassis_cmd_msg *cmd, int16_t* out_speed) = mecanum_calc;
+static void mecanum_calc(struct chassis_cmd_msg *cmd, int16_t* out_speed);
+static void (*chassis_calc_moto_speed)(struct chassis_cmd_msg *cmd, int16_t* out_speed) = mecanum_calc;
 #endif /* BSP_CHASSIS_MECANUM_MODE */
-static void absolute_cal(struct chassis_cmd_msg *cmd, float angle);
 
+static void absolute_cal(struct chassis_cmd_msg *cmd, float angle);
+static struct chassis_real_speed_t
+{
+    float chassis_vx_ch;
+    float chassis_vy_ch;
+    float chassis_vw_ch;
+    float chassis_vx_gim;
+    float chassis_vy_gim;
+
+}chassis_real_speed;
 /* --------------------------------- 底盘线程入口 --------------------------------- */
 static float cmd_dt;
 
@@ -61,11 +81,14 @@ void chassis_thread_entry(void *argument)
     chassis_pub_init();
     chassis_sub_init();
     chassis_motor_init();
+    TIM_Init();
 
     LOG_I("Chassis Task Start");
     for (;;)
     {
         cmd_start = dwt_get_time_ms();
+        /* 计算实际速度 */
+        //omni_get_speed(chassis_motor);
         /* 更新该线程所有的订阅者 */
         chassis_sub_pull();
 
@@ -83,7 +106,7 @@ void chassis_thread_entry(void *argument)
             }
             break;
         case CHASSIS_FOLLOW_GIMBAL:
-            chassis_cmd.vw = pid_calculate(follow_pid, chassis_cmd.offset_angle, 0);
+            chassis_cmd.vw = -pid_calculate(follow_pid, chassis_cmd.offset_angle, SIDEWAYS_ANGLE);
             /* 底盘运动学解算 */
             absolute_cal(&chassis_cmd, chassis_cmd.offset_angle);
             chassis_calc_moto_speed(&chassis_cmd, motor_ref);
@@ -127,7 +150,7 @@ void chassis_thread_entry(void *argument)
  */
 static void chassis_pub_init(void)
 {
-
+    pub_chassis = pub_register("chassis_fdb",sizeof(struct chassis_fdb_msg));
 }
 
 /**
@@ -136,6 +159,8 @@ static void chassis_pub_init(void)
 static void chassis_sub_init(void)
 {
     sub_cmd = sub_register("chassis_cmd", sizeof(struct chassis_cmd_msg));
+    sub_referee= sub_register("referee_fdb", sizeof(struct referee_fdb_msg));
+    sub_ins = sub_register("ins_msg", sizeof(struct ins_msg));
 }
 
 /**
@@ -143,17 +168,20 @@ static void chassis_sub_init(void)
  */
 static void chassis_pub_push(void)
 {
-
+    pub_push_msg(pub_chassis,&chassis_fdb);
 }
 
-/* --------------------------------- 电机控制相关 --------------------------------- */
 /**
  * @brief chassis 线程中所有订阅者获取更新话题
  */
 static void chassis_sub_pull(void)
 {
     sub_get_msg(sub_cmd, &chassis_cmd);
+    sub_get_msg(sub_referee, &referee_fdb);
+    sub_get_msg(sub_ins, &ins_data);
 }
+
+/* --------------------------------- 电机控制相关 --------------------------------- */
 
 static rt_int16_t motor_control_0(dji_motor_measure_t measure)
 {
@@ -182,6 +210,123 @@ static rt_int16_t motor_control_3(dji_motor_measure_t measure)
     set = pid_calculate(chassis_controller[3].speed_pid, measure.speed_rpm, motor_ref[3]);
     return set;
 }
+//#define CURRENT_POWER_LIMIT_RATE 80
+//static rt_int16_t motor_control_0(dji_motor_measure_t measure)
+//{
+//    static rt_int16_t set = 0;
+//    static int16_t chassis_max_current=0;
+//    static int16_t chassis_power_limit=0;
+//    /*传参给局部变量防止被更改抽风*/
+//    chassis_power_limit=(int16_t)referee_fdb.robot_status.chassis_power_limit;
+//    /*底盘功率限制防止buffer溢出*/
+//    if(chassis_power_limit>=120)
+//    {
+//        chassis_power_limit=120;
+//    }
+//    if(referee_fdb.power_heat_data.chassis_power_buffer<20)
+//    {
+//        chassis_max_current=chassis_power_limit*CURRENT_POWER_LIMIT_RATE*(referee_fdb.power_heat_data.chassis_power_buffer/50);
+//    }
+//    else
+//    {
+//        chassis_max_current=chassis_power_limit*CURRENT_POWER_LIMIT_RATE;
+//    }
+//    if (chassis_power_limit==0)
+//    {
+//        chassis_max_current=8000;
+//    }
+//    set =(rt_int16_t) pid_calculate(chassis_controller[0].speed_pid, measure.speed_rpm, motor_ref[0]);
+//    VAL_LIMIT(set , -chassis_max_current, chassis_max_current);
+//    return set;
+//}
+//
+//static rt_int16_t motor_control_1(dji_motor_measure_t measure)
+//{
+//
+//    static rt_int16_t set = 0;
+//    static int16_t chassis_max_current=0;
+//    static int16_t chassis_power_limit=0;
+//    /*传参给局部变量防止被更改抽风*/
+//    chassis_power_limit=(int16_t)referee_fdb.robot_status.chassis_power_limit;
+//    /*底盘功率限制防止buffer溢出*/
+//    if(chassis_power_limit>=120)
+//    {
+//        chassis_power_limit=120;
+//    }
+//    if(referee_fdb.power_heat_data.chassis_power_buffer<20)
+//    {
+//        chassis_max_current=chassis_power_limit*CURRENT_POWER_LIMIT_RATE*(referee_fdb.power_heat_data.chassis_power_buffer/50);
+//    }
+//    else
+//    {
+//        chassis_max_current=chassis_power_limit*CURRENT_POWER_LIMIT_RATE;
+//    }
+//    if (chassis_power_limit==0)
+//    {
+//        chassis_max_current=8000;
+//    }
+//    set =(rt_int16_t) pid_calculate(chassis_controller[1].speed_pid, measure.speed_rpm, motor_ref[1]);
+//    VAL_LIMIT(set , -chassis_max_current, chassis_max_current);
+//    return set;
+//}
+//
+//static rt_int16_t motor_control_2(dji_motor_measure_t measure)
+//{
+//    static rt_int16_t set = 0;
+//    static int16_t chassis_max_current=0;
+//    static int16_t chassis_power_limit=0;
+//    /*传参给局部变量防止被更改抽风*/
+//    chassis_power_limit=(int16_t)referee_fdb.robot_status.chassis_power_limit;
+//    /*底盘功率限制防止buffer溢出*/
+//    if(chassis_power_limit>=120)
+//    {
+//        chassis_power_limit=120;
+//    }
+//    if(referee_fdb.power_heat_data.chassis_power_buffer<20)
+//    {
+//        chassis_max_current=chassis_power_limit*CURRENT_POWER_LIMIT_RATE*(referee_fdb.power_heat_data.chassis_power_buffer/50);
+//    }
+//    else
+//    {
+//        chassis_max_current=chassis_power_limit*CURRENT_POWER_LIMIT_RATE;
+//    }
+//    if (chassis_power_limit==0)
+//    {
+//        chassis_max_current=8000;
+//    }
+//    set =(rt_int16_t) pid_calculate(chassis_controller[2].speed_pid, measure.speed_rpm, motor_ref[2]);
+//    VAL_LIMIT(set , -chassis_max_current, chassis_max_current);
+//    return set;
+//}
+//
+//static rt_int16_t motor_control_3(dji_motor_measure_t measure)
+//{
+//    static rt_int16_t set = 0;
+//    static int16_t chassis_max_current=0;
+//    static int16_t chassis_power_limit=0;
+//    /*传参给局部变量防止被更改抽风*/
+//    chassis_power_limit=(int16_t)referee_fdb.robot_status.chassis_power_limit;
+//    /*底盘功率限制防止buffer溢出*/
+//    if(chassis_power_limit>=120)
+//    {
+//        chassis_power_limit=120;
+//    }
+//    if(referee_fdb.power_heat_data.chassis_power_buffer<20)
+//    {
+//        chassis_max_current=chassis_power_limit*CURRENT_POWER_LIMIT_RATE*(referee_fdb.power_heat_data.chassis_power_buffer/50);
+//    }
+//    else
+//    {
+//        chassis_max_current=chassis_power_limit*CURRENT_POWER_LIMIT_RATE;
+//    }
+//    if (chassis_power_limit==0)
+//    {
+//        chassis_max_current=8000;
+//    }
+//    set =(rt_int16_t) pid_calculate(chassis_controller[3].speed_pid, measure.speed_rpm, motor_ref[3]);
+//    VAL_LIMIT(set , -chassis_max_current, chassis_max_current);
+//    return set;
+//}
 
 /* 底盘每个电机对应的控制函数 */
 static void *motor_control[4] =
@@ -251,21 +396,112 @@ static void omni_calc(struct chassis_cmd_msg *cmd, int16_t* out_speed)
     int16_t wheel_rpm[4];
     float wheel_rpm_ratio;
 
-    wheel_rpm_ratio = 60.0f / (WHEEL_PERIMETER * 3.14159f) * CHASSIS_DECELE_RATIO * 1000;
+    wheel_rpm_ratio = 60.0f / (WHEEL_PERIMETER * CHASSIS_DECELE_RATIO);
 
     //限制底盘各方向速度
     VAL_LIMIT(cmd->vx, -MAX_CHASSIS_VX_SPEED, MAX_CHASSIS_VX_SPEED);  //mm/s
     VAL_LIMIT(cmd->vy, -MAX_CHASSIS_VY_SPEED, MAX_CHASSIS_VY_SPEED);  //mm/s
-    VAL_LIMIT(cmd->vw, -MAX_CHASSIS_VR_SPEED, MAX_CHASSIS_VR_SPEED);  //deg/s
+    VAL_LIMIT(cmd->vw, -MAX_CHASSIS_VR_SPEED, MAX_CHASSIS_VR_SPEED);  //rad/s
 
-    wheel_rpm[0] = ( cmd->vx + cmd->vy + cmd->vw * (LENGTH_A + LENGTH_B)) * wheel_rpm_ratio; //left//x，y方向速度,w底盘转动速度
-    wheel_rpm[1] = ( cmd->vx - cmd->vy + cmd->vw * (LENGTH_A + LENGTH_B)) * wheel_rpm_ratio; //forward
-    wheel_rpm[2] = (-cmd->vx - cmd->vy + cmd->vw * (LENGTH_A + LENGTH_B)) * wheel_rpm_ratio; //right
-    wheel_rpm[3] = (-cmd->vx + cmd->vy + cmd->vw * (LENGTH_A + LENGTH_B)) * wheel_rpm_ratio; //back
+    wheel_rpm[0] = ( cmd->vx + cmd->vy + cmd->vw * (LENGTH_A + LENGTH_B)) * wheel_rpm_ratio;//left//x，y方向速度,w底盘转动速度
+    wheel_rpm[1] = ( cmd->vx - cmd->vy + cmd->vw * (LENGTH_A + LENGTH_B)) * wheel_rpm_ratio;//forward
+    wheel_rpm[2] = (-cmd->vx - cmd->vy + cmd->vw * (LENGTH_A + LENGTH_B)) * wheel_rpm_ratio;//right
+    wheel_rpm[3] = (-cmd->vx + cmd->vy + cmd->vw * (LENGTH_A + LENGTH_B)) * wheel_rpm_ratio;//back
 
-    memcpy(out_speed, wheel_rpm, 4*sizeof(int16_t)); //copy the rpm to out_speed
+    memcpy(out_speed, wheel_rpm, 4*sizeof(int16_t));//copy the rpm to out_speed
 }
 #endif /* BSP_CHASSIS_OMNI_MODE */
+
+/**
+ * @brief 全向轮底盘运动逆解算求解实际速度(x,y,w是相对于底盘的x，y，w的速度)
+ *
+ * @param TODO:具体数值正负待定，由测试得正确结果
+ * @param
+ */
+
+static rt_err_t timeout_cb(rt_device_t dev, rt_size_t size)
+{
+    x_ch = vx_ch *0.001f +x_ch;
+    y_ch = vy_ch *0.001f +y_ch;
+    w_ch = vw_ch * 0.001f * RADIAN_COEF +w_ch;
+    x_gim = vx_gim *0.001f +x_gim;
+    y_gim = vy_gim *0.001f +y_gim;
+    x_cos_w = vx_gim * cosf(ins_data.yaw_total_angle/RADIAN_COEF)*0.001f + x_cos_w;
+    x_sin_w = vy_gim * sinf(ins_data.yaw_total_angle/RADIAN_COEF)*0.001f + x_sin_w;
+    y_cos_w = vy_gim * cosf(ins_data.yaw_total_angle/RADIAN_COEF)*0.001f + y_cos_w;
+    y_sin_w = vx_gim * sinf(ins_data.yaw_total_angle/RADIAN_COEF)*0.001f + y_sin_w;
+    chassis_fdb.x_pos_gim=x_cos_w + x_sin_w;
+    chassis_fdb.y_pos_gim=y_cos_w - y_sin_w;
+
+    return 0;
+}
+
+int TIM_Init(void)
+{
+    rt_err_t ret = RT_EOK;
+    rt_hwtimerval_t timeout_s;      /* 定时器超时值 */
+    rt_device_t hw_dev = RT_NULL;   /* 定时器设备句柄 */
+    rt_hwtimer_mode_t mode;         /* 定时器模式 */
+    rt_uint32_t freq = 10000;               /* 计数频率 */
+
+    /* 查找定时器设备 */
+    hw_dev = rt_device_find("timer4" );
+    if (hw_dev == RT_NULL)
+    {
+        rt_kprintf("hwtimer sample run failed! can't find %s device!\n", HWTIMER_DEV_NAME);
+        return RT_ERROR;
+    }
+
+    /* 以读写方式打开设备 */
+    ret = rt_device_open(hw_dev, RT_DEVICE_OFLAG_RDWR);
+    if (ret != RT_EOK)
+    {
+        rt_kprintf("open %s device failed!\n", HWTIMER_DEV_NAME);
+        return ret;
+    }
+
+    /* 设置超时回调函数 */
+    rt_device_set_rx_indicate(hw_dev, timeout_cb);
+
+    rt_device_control(hw_dev, HWTIMER_CTRL_FREQ_SET, &freq);
+    mode = HWTIMER_MODE_PERIOD;
+    ret = rt_device_control(hw_dev, HWTIMER_CTRL_MODE_SET, &mode);
+    if (ret != RT_EOK)
+    {
+        rt_kprintf("set mode failed! ret is :%d\n", ret);
+        return ret;
+    }
+
+    timeout_s.sec = 0;      /* 秒 */
+    timeout_s.usec = 1000;     /* 微秒 */
+    if (rt_device_write(hw_dev, 0, &timeout_s, sizeof(timeout_s)) != sizeof(timeout_s))
+    {
+        rt_kprintf("set timeout value failed\n");
+        return RT_ERROR;
+    }
+}
+
+//static struct chassis_real_speed_t omni_get_speed(dji_motor_object_t *chassis_motor[4])//里程计计算函数。
+//{
+//
+//    float angle_hd = -(chassis_cmd.offset_angle/RADIAN_COEF);
+//    float wheel_rpm_ratio = 60.0f/(WHEEL_PERIMETER*CHASSIS_DECELE_RATIO);
+//
+//    int16_t wheel_rpm[4];
+//    for (int i = 0; i < 4; ++i)
+//    {
+//        wheel_rpm[i]=chassis_motor[i]->measure.speed_rpm;
+//    }
+//    struct chassis_real_speed_t real_speed;
+//    vw_ch =real_speed.chassis_vw_ch = (wheel_rpm[0] + wheel_rpm[1] + wheel_rpm[2] + wheel_rpm[3]) / (4.0f * wheel_rpm_ratio * LENGTH_RADIUS);
+//    vy_ch =real_speed.chassis_vy_ch = (wheel_rpm[0] + wheel_rpm[3] - wheel_rpm[1] - wheel_rpm[2]) / (4.0f * 0.7071f * wheel_rpm_ratio);
+//    vx_ch =real_speed.chassis_vx_ch = (wheel_rpm[0] + wheel_rpm[1] - wheel_rpm[2] - wheel_rpm[3]) / (4.0f * 0.7071f * wheel_rpm_ratio) ;
+//    vx_gim =real_speed.chassis_vx_gim =  real_speed.chassis_vx_ch* cos(angle_hd) - real_speed.chassis_vy_ch* sin(angle_hd);
+//    vy_gim =real_speed.chassis_vy_gim =  real_speed.chassis_vx_ch* sin(angle_hd) + real_speed.chassis_vy_ch* cos(angle_hd);
+//
+//    return real_speed;
+//}
+
 
 #ifdef BSP_CHASSIS_MECANUM_MODE
 /**
@@ -274,26 +510,31 @@ static void omni_calc(struct chassis_cmd_msg *cmd, int16_t* out_speed)
  * @param cmd cmd 底盘指令值，使用其中的速度
  * @param out_speed 底盘各轮速度
  */
-void mecanum_calc(struct chassis_cmd_msg *cmd, int16_t* out_speed)
+static void mecanum_calc(struct chassis_cmd_msg *cmd, int16_t* out_speed)
 {
-    static float rotate_ratio_f = ((WHEELBASE + WHEELTRACK) / 2.0f) / RADIAN_COEF;
-    static float rotate_ratio_b = ((WHEELBASE + WHEELTRACK) / 2.0f) / RADIAN_COEF;
-    static float wheel_rpm_ratio = 60.0f / (WHEEL_PERIMETER * CHASSIS_DECELE_RATIO);
-
     int16_t wheel_rpm[4];
-    float max = 0;
+    float wheel_rpm_ratio;
+
+    wheel_rpm_ratio = 60.0f / (WHEEL_PERIMETER * CHASSIS_DECELE_RATIO);
 
     //限制底盘各方向速度
     VAL_LIMIT(cmd->vx, -MAX_CHASSIS_VX_SPEED, MAX_CHASSIS_VX_SPEED);  //mm/s
     VAL_LIMIT(cmd->vy, -MAX_CHASSIS_VY_SPEED, MAX_CHASSIS_VY_SPEED);  //mm/s
-    VAL_LIMIT(cmd->vw, -MAX_CHASSIS_VR_SPEED, MAX_CHASSIS_VR_SPEED);  //deg/s
+    VAL_LIMIT(cmd->vw, -MAX_CHASSIS_VR_SPEED, MAX_CHASSIS_VR_SPEED);  //rad/s
 
-    wheel_rpm[0] = ( cmd->vx - cmd->vy + cmd->vw * rotate_ratio_f) * wheel_rpm_ratio;
-    wheel_rpm[1] = ( cmd->vx + cmd->vy + cmd->vw * rotate_ratio_f) * wheel_rpm_ratio;
-    wheel_rpm[2] = (-cmd->vx + cmd->vy + cmd->vw * rotate_ratio_b) * wheel_rpm_ratio;
-    wheel_rpm[3] = (-cmd->vx - cmd->vy + cmd->vw * rotate_ratio_b) * wheel_rpm_ratio;
+//    wheel_rpm[0] = ( cmd->vx - cmd->vy - cmd->vw * (LENGTH_A + LENGTH_B)) * wheel_rpm_ratio;//left//x，y方向速度,w底盘转动速度
+//    wheel_rpm[1] = ( cmd->vx + cmd->vy + cmd->vw * (LENGTH_A + LENGTH_B)) * wheel_rpm_ratio;//forward
+//    wheel_rpm[2] = (+cmd->vx - cmd->vy + cmd->vw * (LENGTH_A + LENGTH_B)) * wheel_rpm_ratio;//right
+//    wheel_rpm[3] = (+cmd->vx + cmd->vy - cmd->vw * (LENGTH_A + LENGTH_B)) * wheel_rpm_ratio;//back
 
-    memcpy(out_speed, wheel_rpm, 4 * sizeof(int16_t));
+
+    wheel_rpm[0] = ( cmd->vx + cmd->vy + cmd->vw * (LENGTH_A + LENGTH_B)) * wheel_rpm_ratio;//left//x，y方向速度,w底盘转动速度
+    wheel_rpm[1] = ( cmd->vx - cmd->vy + cmd->vw * (LENGTH_A + LENGTH_B)) * wheel_rpm_ratio;//forward
+    wheel_rpm[2] = (-cmd->vx - cmd->vy + cmd->vw * (LENGTH_A + LENGTH_B)) * wheel_rpm_ratio;//right
+    wheel_rpm[3] = (-cmd->vx + cmd->vy + cmd->vw * (LENGTH_A + LENGTH_B)) * wheel_rpm_ratio;//back
+
+
+    memcpy(out_speed, wheel_rpm, 4*sizeof(int16_t));//copy the rpm to out_speed
 }
 #endif /* BSP_CHASSIS_MECANUM_MODE */
 
@@ -309,6 +550,6 @@ static void absolute_cal(struct chassis_cmd_msg *cmd, float angle)
     float vy = cmd->vy;
 
     //保证底盘是相对摄像头做移动
-    cmd->vx = vx * cos(angle_hd) + vy * sin(angle_hd);
-    cmd->vy = -vx * sin(angle_hd) + vy * cos(angle_hd);
+    cmd->vx = vx * cos(angle_hd) - vy * sin(angle_hd);
+    cmd->vy = vx * sin(angle_hd) + vy * cos(angle_hd);
 }
