@@ -117,7 +117,9 @@ void transmission_task_entry(void* argument)
 /*--------------------------------------------------具体需要发送的数据--------------------------------- */
         if((dwt_get_time_ms()-heart_dt)>=HEART_BEAT)
         {
-            rt_device_control(vs_port, RT_DEVICE_CTRL_RESUME, (void *) RT_DEVICE_FLAG_INT_TX);
+            rt_device_close(vs_port);
+            rt_device_open(vs_port, RT_DEVICE_FLAG_INT_RX);
+            heart_dt=dwt_get_time_ms();
         }
         Send_to_pc(rpy_tx_data);
 /*--------------------------------------------------具体需要发送的数据---------------------------------*/
