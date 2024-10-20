@@ -2,6 +2,7 @@
 // Created by 16933 on 2022/3/15.
 //
 #include "stdio.h"
+#include <stdint.h>
 #define ARobot_ID UI_Data_RobotID_RStandard3
 #define ACilent_ID UI_Data_CilentID_RStandard3
 /****************************数据帧起始字节，为固定值********************/
