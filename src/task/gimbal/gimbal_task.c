@@ -86,7 +86,6 @@ void gimbal_thread_entry(void *argument)
     static float gim_start;
     static rt_uint32_t init_start_time; // 云台初始化归中开始时间，避免长时间因为静态误差，卡在归中模式
     rt_uint32_t init_dt = 0; // 云台初始化归中进行时长
-
     gimbal_pub_init();
     gimbal_sub_init();
     gimbal_motor_init();

@@ -1,6 +1,3 @@
-//
-// Created by turboDog on 2021/11/21.
-//
 
 #include "ramp.h"
 
@@ -10,8 +7,14 @@ static ramp_obj_t *ramp_obj[RAMP_NUM_MAX] = {NULL};
 
 /**
   * @brief     斜坡控制实例重置
+<<<<<<< HEAD
   * @param[in] ramp: 斜坡实例指针
   * @param[in] scale: 控制数据变化斜率
+=======
+  * @param[in] ramp : 斜坡实例指针
+  * @param[in] count : 计数器
+  * @param[in] scale : 控制数据变化斜率
+>>>>>>> HainanU-Robomaster/feature
   */
 void ramp_reset(ramp_obj_t *ramp, int32_t count,int32_t scale)
 {
@@ -38,7 +41,12 @@ float ramp_calc(ramp_obj_t *ramp)
 
 /**
  * @brief 初始化ramp实例,并返回ramp实例指针
+<<<<<<< HEAD
  * @param config PID初始化设置
+=======
+ * @param count : 计数器
+ * @param scale : 控制数据变化斜率
+>>>>>>> HainanU-Robomaster/feature
  */
 ramp_obj_t *ramp_register(int32_t count,int32_t scale)
 {

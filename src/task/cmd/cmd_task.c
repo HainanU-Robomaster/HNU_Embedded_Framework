@@ -256,11 +256,19 @@ static void remote_to_cmd_sbus(void)
             // TODO：考虑将陀螺转速改为变量，可以手动或自动调整转速
             if (gim_cmd.ctrl_mode==GIMBAL_GYRO)
             {
+<<<<<<< HEAD
                 chassis_cmd.vw = (float) (rc_now->ch5) / 784.0 * 5.0; // 小陀螺转速
             }
             if (gim_cmd.ctrl_mode==GIMBAL_AUTO)
             {
                 chassis_cmd.vw=(float)(rc_now->ch5) / 784.0 * 5.0; // 小陀螺转速
+=======
+                chassis_cmd.vw = (float) (rc_now->ch5) / SBUS_ROTATE_LIMIT_RATIO; // 小陀螺转速
+            }
+            if (gim_cmd.ctrl_mode==GIMBAL_AUTO)
+            {
+                chassis_cmd.vw=(float)(rc_now->ch5) / SBUS_ROTATE_LIMIT_RATIO; // 小陀螺转速
+>>>>>>> HainanU-Robomaster/feature
                 chassis_cmd.vx=2000*(float)(rc_now->ch5) / 784.0;
                 chassis_cmd.vy=2000*(float)(rc_now->ch5) / 784.0;
             }
@@ -505,7 +513,7 @@ static void remote_to_cmd_pc_DT7(void)
     }
     if (chassis_cmd.ctrl_mode==CHASSIS_SPIN)
     {
-        chassis_cmd.vw=4.5+2*referee_fdb.robot_status.chassis_power_limit/60;/*!小陀螺转速，随着功率限制提升加快转速*/
+        chassis_cmd.vw=ROTATE_INTERCEPT+ROTATE_MULTIPLIER*referee_fdb.robot_status.chassis_power_limit/ROTATE_LIMIT_RATIO;/*!小陀螺转速，随着功率限制提升加快转速*/
     }
     /*TODO:--------------------------------------------------发射模块状态机--------------------------------------------------------------*/
     /*!-----------------------------------------开关摩擦轮--------------------------------------------*/
@@ -579,7 +587,7 @@ static void remote_to_cmd_pc_DT7(void)
                 }
                 if(referee_fdb.robot_status.shooter_barrel_heat_limit==0)
                 {
-                    shoot_cmd.shoot_freq=3000;
+                    shoot_cmd.shoot_freq= DBUS_FRICTION_AUTO_SPEED_L;
                 }
             }
             else

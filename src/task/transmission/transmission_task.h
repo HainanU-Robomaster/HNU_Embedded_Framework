@@ -172,7 +172,8 @@ typedef  struct
 /**
   * @brief CDC上下位机通信线程入口函数
   */
-void transmission_task_entry(void* argument);         //
+void transmission_task_entry(void* argument);
+
 
 /**
   * @brief 拆分并填充rpy欧拉角数据
