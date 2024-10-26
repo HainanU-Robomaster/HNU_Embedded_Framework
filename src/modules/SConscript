@@ -1,0 +1,68 @@
+from building import *
+import os
+
+cwd     = GetCurrentDir()
+path = [cwd]
+src  = []
+
+if GetDepend(['BSP_USING_MOTOR']):
+    path += [cwd + '/motor']
+
+if GetDepend(['BSP_USING_DJI_MOTOR']):
+    src += [cwd + '/motor/DJI_motor/dji_motor.c']
+    path += [cwd + '/motor/DJI_motor']
+
+if GetDepend(['BSP_USING_HT_MOTOR']):
+    src += [cwd + '/motor/HT_motor/ht04.c']
+    path += [cwd + '/motor/HT_motor']
+
+if GetDepend(['BSP_USING_LK_MOTOR']):
+    src += [cwd + '/motor/LK_motor/lk_motor.c']
+    path += [cwd + '/motor/LK_motor']
+
+if GetDepend(['BSP_USING_DWT']):
+    src += [cwd + '/dwt/drv_dwt.c']
+    path += [cwd + '/dwt']
+
+if GetDepend(['BSP_USING_PS_MSG']):
+    src += [cwd + '/msg/drv_msg.c']
+    path += [cwd + '/msg']
+
+if GetDepend(['BSP_USING_MAG']):
+    path += [cwd + '/mag']
+
+if GetDepend(['BSP_USING_IST8310']):
+    src += [cwd + '/mag/ist8310/ist8310.c']
+    path += [cwd + '/mag/ist8310']
+
+if GetDepend(['BSP_USING_IMU']):
+    path += [cwd + '/imu']
+
+if GetDepend(['BSP_USING_BMI088']):
+    src += [cwd + '/imu/bmi088/bmi088.c']
+    path += [cwd + '/imu/bmi088']
+    
+if GetDepend(['BSP_USING_RC_DBUS']):
+    src += Glob(cwd + '/rc/dbus/*.c')
+    path += [cwd + '/rc/dbus']
+
+if GetDepend(['BSP_USING_RC_KEYBOARD']):
+    src += Glob(cwd + '/rc/keyboard/*.c')
+    path += [cwd + '/rc/keyboard']
+
+if GetDepend(['BSP_USING_REFEREE']):
+    src += Glob(cwd + '/referee/*.c')
+    path += [cwd + '/referee']
+    src += Glob(cwd + '/referee/bsp_referee_UI/*.c')
+    path += [cwd + '/referee/bsp_referee_UI']
+
+if GetDepend(['BSP_USING_LEG']):
+    src += Glob(cwd + '/leg/*.c')
+    path += [cwd + '/leg']
+
+
+src  += [cwd + '/usr_callback.c']
+
+group = DefineGroup('RM_Modules', src, depend = [''], CPPPATH = path)
+
+Return('group')
