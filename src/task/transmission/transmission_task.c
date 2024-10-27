@@ -34,6 +34,7 @@ RpyTypeDef rpy_tx_data={
 };
 RpyTypeDef rpy_rx_data; //接收解析结构体
 static rt_uint32_t heart_dt;
+TeamColor  team_color;
 /* ---------------------------------usb虚拟串口数据相关 --------------------------------- */
 static rt_device_t vs_port = RT_NULL;
 /* -------------------------------- 线程间通讯话题相关 ------------------------------- */
@@ -85,6 +86,7 @@ static void trans_pub_push(void)
 
 /* --------------------------------- 通讯线程入口 --------------------------------- */
 static float trans_dt;
+static float openfire;
 
 void transmission_task_entry(void* argument)
 {
@@ -121,6 +123,7 @@ void transmission_task_entry(void* argument)
             rt_device_open(vs_port, RT_DEVICE_FLAG_INT_RX);
             heart_dt=dwt_get_time_ms();
         }
+        judge_color();
         Send_to_pc(rpy_tx_data);
 /*--------------------------------------------------具体需要发送的数据---------------------------------*/
         /* 用于调试监测线程调度使用 */
@@ -134,7 +137,7 @@ void transmission_task_entry(void* argument)
 void Send_to_pc(RpyTypeDef data_r)
 {
     /*填充数据*/
-    pack_Rpy(&data_r, -(gim_fdb.yaw_offset_angle - ins_data.yaw), gim_fdb.pit_offset_angle-ins_data.pitch, ins_data.roll);
+    pack_Rpy(&data_r, -(gim_fdb.yaw_offset_angle - ins_data.yaw), gim_fdb.pit_offset_angle-ins_data.pitch, openfire,team_color);
     Check_Rpy(&data_r);
 
     rt_device_write(vs_port, 0, (uint8_t*)&data_r, sizeof(data_r));
@@ -144,7 +147,16 @@ void Send_to_pc(RpyTypeDef data_r)
     }
 }
 
-void pack_Rpy(RpyTypeDef *frame, float yaw, float pitch,float roll)
+void judge_color()
+{
+    if(robot_status.robot_id < 10)
+        team_color = RED;
+    else
+        team_color = BLUE;
+}
+
+
+void pack_Rpy(RpyTypeDef *frame, float yaw, float pitch,float openfire, float team_color)   //此处roll值作为开火标志位
 {
     int8_t rpy_tx_buffer[FRAME_RPY_LEN] = {0} ;
     int32_t rpy_data = 0;
@@ -166,8 +178,13 @@ void pack_Rpy(RpyTypeDef *frame, float yaw, float pitch,float roll)
     rpy_tx_buffer[10] = *gimbal_rpy >> 8;
     rpy_tx_buffer[11] = *gimbal_rpy >> 16;
     rpy_tx_buffer[12] = *gimbal_rpy >> 24;
+    rpy_data = team_color *1000;
+    rpy_tx_buffer[13] = *gimbal_rpy;
+    rpy_tx_buffer[14] = *gimbal_rpy >> 8;
+    rpy_tx_buffer[15] = *gimbal_rpy >> 16;
+    rpy_tx_buffer[16] = *gimbal_rpy >> 24;
 
-    memcpy(&frame->DATA[0], rpy_tx_buffer,13);
+    memcpy(&frame->DATA[0], rpy_tx_buffer,17);
 
     frame->LEN = FRAME_RPY_LEN;
 }
@@ -215,10 +232,18 @@ static rt_err_t usb_input(rt_device_t dev, rt_size_t size)
                 if (rpy_rx_data.DATA[0]) {//相对角度控制
                     trans_fdb.yaw =  (*(int32_t *) &rpy_rx_data.DATA[1] / 1000.0);
                     trans_fdb.pitch =-(*(int32_t *) &rpy_rx_data.DATA[5] / 1000.0);
+                    if(openfire >= 0.98*180/3.14159)                 //设置标志位，值为准确度*180/pi，暂定为98%
+                        trans_fdb.roll = 1;
+                    else
+                        trans_fdb.roll = 0;
                 }
                 else{//绝对角度控制
                     trans_fdb.yaw =  (*(int32_t *) &rpy_rx_data.DATA[1] / 1000.0);
                     trans_fdb.pitch = -(*(int32_t *) &rpy_rx_data.DATA[5] / 1000.0);
+                    if(openfire >= 0.98*180/3.14159)                 //设置标志位，值为准确度*180/pi，暂定为98%
+                        trans_fdb.roll = 1;
+                    else
+                        trans_fdb.roll = 0;
                 }
             }break;
             case HEARTBEAT:{
