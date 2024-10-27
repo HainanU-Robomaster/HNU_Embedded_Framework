@@ -36,7 +36,8 @@ static void gimbal_sub_pull(void);
 #define X 0
 #define Y 1
 #define Z 2
-#define INIT_TIMEOUT 300  // 单位: ms 初始化归中超时时间
+/*单位: ms 初始化归中超时时间*/
+#define INIT_TIMEOUT 300
 static struct gimbal_controller_t{
     /* 基于imu数据闭环，主要用于手动模式 */
     pid_obj_t *pid_speed_imu;
