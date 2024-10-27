@@ -177,7 +177,6 @@ static void chassis_sub_pull(void)
 }
 
 /* --------------------------------- 电机控制相关 --------------------------------- */
-
 #define CURRENT_POWER_LIMIT_RATE 60
 static rt_int16_t motor_control_0(dji_motor_measure_t measure)
 {
