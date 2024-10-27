@@ -30,6 +30,7 @@ static void chassis_pub_push(void);
 static void chassis_sub_pull(void);
 
 /* -------------------------------- 裁判系统底盘功率相关 ------------------------------- */
+
 //extern robot_status_t robot_status;
 //extern ext_power_heat_data_t power_heat_data_t;
 /* --------------------------------- 电机控制相关 --------------------------------- */
@@ -47,6 +48,7 @@ static int16_t motor_ref[4]; // 电机控制期望值
 static void chassis_motor_init();
 /*定时器初始化*/
 static int TIM_Init(void);
+
 /*里程计所需数据*/
 static float x_ch, y_ch, w_ch, x_gim, y_gim,vw_ch,vy_ch,vx_ch,vx_gim,vy_gim,x_sin_w,x_cos_w,y_sin_w,y_cos_w;
 /* --------------------------------- 底盘运动学解算 --------------------------------- */

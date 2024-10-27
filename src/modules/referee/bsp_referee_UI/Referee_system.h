@@ -305,6 +305,8 @@ typedef struct
 } __attribute__((__packed__)) robot_status_t;
 #endif //SETINGS_REFEREE_SYSTEM_H
 
+static robot_status_t robot_status;
+
 
 /**
  *   实时功率热量数据   对应命令码ID为：0x0202

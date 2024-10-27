@@ -141,6 +141,7 @@ struct shoot_fdb_msg
  { // 云台自瞄角度控制
      float yaw;
      float pitch;
+     float roll;
      rt_uint8_t heartbeat;
  };
 

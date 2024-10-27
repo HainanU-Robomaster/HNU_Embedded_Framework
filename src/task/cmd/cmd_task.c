@@ -10,6 +10,7 @@
 #include "rm_algorithm.h"
 #include "rm_module.h"
 #include "rm_task.h"
+#include "Referee_system.h"
 
 #define DBG_TAG   "rm.task"
 #define DBG_LVL DBG_INFO
@@ -88,6 +89,7 @@ void cmd_thread_entry(void *argument)
     km_vx_ramp = ramp_register(100, 2500000);
     km_vy_ramp = ramp_register(100, 2500000);
     LOG_I("Cmd Task Start");
+
     for (;;)
     {
         cmd_start = dwt_get_time_ms();
@@ -254,11 +256,19 @@ static void remote_to_cmd_sbus(void)
             // TODO：考虑将陀螺转速改为变量，可以手动或自动调整转速
             if (gim_cmd.ctrl_mode==GIMBAL_GYRO)
             {
+<<<<<<< HEAD
+                chassis_cmd.vw = (float) (rc_now->ch5) / 784.0 * 5.0; // 小陀螺转速
+            }
+            if (gim_cmd.ctrl_mode==GIMBAL_AUTO)
+            {
+                chassis_cmd.vw=(float)(rc_now->ch5) / 784.0 * 5.0; // 小陀螺转速
+=======
                 chassis_cmd.vw = (float) (rc_now->ch5) / SBUS_ROTATE_LIMIT_RATIO; // 小陀螺转速
             }
             if (gim_cmd.ctrl_mode==GIMBAL_AUTO)
             {
                 chassis_cmd.vw=(float)(rc_now->ch5) / SBUS_ROTATE_LIMIT_RATIO; // 小陀螺转速
+>>>>>>> HainanU-Robomaster/feature
                 chassis_cmd.vx=2000*(float)(rc_now->ch5) / 784.0;
                 chassis_cmd.vy=2000*(float)(rc_now->ch5) / 784.0;
             }
@@ -525,6 +535,12 @@ static void remote_to_cmd_pc_DT7(void)
     {
         key_v_status=-key_v_status;
     }
+    if (trans_fdb.roll == 1 && gim_cmd.ctrl_mode == GIMBAL_AUTO){
+        shoot_cmd.ctrl_mode=SHOOT_COUNTINUE;
+    }
+    if (trans_fdb.roll == 0 && gim_cmd.ctrl_mode == GIMBAL_AUTO){
+        shoot_cmd.ctrl_mode=SHOOT_STOP;
+    }
     if (key_v_status==-1)
     {
         shoot_cmd.ctrl_mode=SHOOT_COUNTINUE;
@@ -547,7 +563,6 @@ static void remote_to_cmd_pc_DT7(void)
                 {
                     shoot_cmd.trigger_status=TRIGGER_ING;
                 }
-
             }
             else
             {
@@ -561,9 +576,10 @@ static void remote_to_cmd_pc_DT7(void)
             break;
 
         case SHOOT_COUNTINUE:
-            if((rc_now->mouse.l==1||rc_now->wheel>=200)&&shoot_cmd.friction_status==1&&(referee_fdb.power_heat_data.shooter_id1_17mm_cooling_heat < (referee_fdb.robot_status.shooter_barrel_heat_limit-10)))
+            if((rc_now->mouse.l==1||rc_now->wheel>=200)&&shoot_cmd.friction_status==1)
+             //   &&(referee_fdb.power_heat_data.shooter_id1_17mm_cooling_heat < (referee_fdb.robot_status.shooter_barrel_heat_limit-10)))
             {
-                shoot_cmd.shoot_freq= DBUS_FRICTION_AUTO_SPEED_H;
+                shoot_cmd.shoot_freq=4500;
                 /*!扳机连发功率限制如果未挂载功率限制，发射频率置为一个合适速度*/
                 if(((int16_t)referee_fdb.robot_status.shooter_barrel_heat_limit-(int16_t)referee_fdb.power_heat_data.shooter_id1_17mm_cooling_heat)<=30)
                 {

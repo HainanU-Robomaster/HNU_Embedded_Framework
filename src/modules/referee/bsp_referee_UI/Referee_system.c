@@ -314,7 +314,6 @@ void Referee_Data_Unpack()
     }
 }
 
-
 /**
  * @brief 裁判系统命令数据解包函数
  * @param referee_data_frame: 接收到的整帧数据
