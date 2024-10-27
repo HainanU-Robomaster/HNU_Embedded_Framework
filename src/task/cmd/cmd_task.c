@@ -47,7 +47,7 @@ static float gyro_pitch_inherit;
 /*用于清除环形缓冲区buffer的指针*/
 extern rt_uint8_t *r_buffer_point;
 /*----------------------------------裁判系统数据接收/比赛状态-------------------------------------*/
-//extern robot_status_t robot_status;
+extern robot_status_t robot_status;
 //extern ext_power_heat_data_t power_heat_data_t;
 /*案件状态标志位*/
 static int key_e_status=-1;
@@ -524,6 +524,14 @@ static void remote_to_cmd_pc_DT7(void)
     if (km.v_sta==KEY_PRESS_ONCE)
     {
         key_v_status=-key_v_status;
+    }
+    if (trans_fdb.roll == 1 && gim_cmd.ctrl_mode == GIMBAL_AUTO)
+    {
+        shoot_cmd.ctrl_mode=SHOOT_COUNTINUE;
+    }
+    if (trans_fdb.roll == 0 && gim_cmd.ctrl_mode == GIMBAL_AUTO)
+    {
+        shoot_cmd.ctrl_mode=SHOOT_STOP;
     }
     if (key_v_status==-1)
     {

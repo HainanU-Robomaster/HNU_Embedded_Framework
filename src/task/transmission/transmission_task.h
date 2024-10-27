@@ -177,7 +177,7 @@ void transmission_task_entry(void* argument);
 /**
   * @brief 拆分并填充rpy欧拉角数据
   */
-void pack_Rpy(RpyTypeDef *frame, float yaw, float pitch,float roll);
+void pack_Rpy(RpyTypeDef *frame, float yaw, float pitch,float roll,float team_color);
 
 /**
   * @brief 和校验，附加校验
@@ -208,4 +208,11 @@ typedef enum
     trans_NO=0,  //不执行清空操作
 } trans_back_e;
 
+typedef enum {
+    RED = 1,
+    BLUE = 0,
+    UNKNOWN = -1
+} TeamColor;            //本机器人颜色
+
+void judge_color();
 #endif // RTTHREAD_TRANSMISSION_TASK_H
