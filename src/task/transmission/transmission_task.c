@@ -173,7 +173,7 @@ void pack_Rpy(RpyTypeDef *frame, float yaw, float pitch,float openfire, float te
     rpy_tx_buffer[6] = *gimbal_rpy >> 8;
     rpy_tx_buffer[7] = *gimbal_rpy >> 16;
     rpy_tx_buffer[8] = *gimbal_rpy >> 24;
-    rpy_data = roll *1000;
+    rpy_data = openfire *1000;
     rpy_tx_buffer[9] = *gimbal_rpy;
     rpy_tx_buffer[10] = *gimbal_rpy >> 8;
     rpy_tx_buffer[11] = *gimbal_rpy >> 16;
