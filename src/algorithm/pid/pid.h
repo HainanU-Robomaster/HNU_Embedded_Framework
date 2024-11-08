@@ -14,7 +14,7 @@
 #ifndef _PID_H
 #define _PID_H
 
-#include <rtthread.h>
+#include "rm_algorithm.h"
 #include <math.h>
 
 #define PID_NUM_MAX 30      // 最大PID实例数

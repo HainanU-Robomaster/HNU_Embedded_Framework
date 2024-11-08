@@ -11,15 +11,16 @@
 #ifndef MOTOR_TASK_H
 #define MOTOR_TASK_H
 
-#ifdef BSP_USING_DJI_MOTOR
-#include "dji_motor.h"
-#endif /* BSP_USING_DJI_MOTOR */
+/**
+ * @brief 电机控制闭环任务初始化
+ */
+void motor_task_init(void);
 
 /**
  * @brief 电机控制闭环任务,在RTOS中应该设定为1Khz运行
  *        舵机控制任务的频率设定为20Hz或更低
  */
-void motor_thread_entry(void *argument);
+void motor_control_task(void);
 
 #endif // !MOTOR_TASK_H
 

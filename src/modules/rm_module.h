@@ -14,35 +14,19 @@
 #ifndef _RM_MODULE_H
 #define _RM_MODULE_H
 
-#include <rtthread.h>
-#include "usr_callback.h"
+#include "rm_config.h"
 
-#ifdef BSP_USING_DJI_MOTOR
 #include "dji_motor.h"
-#endif /* BSP_USING_DJI_MOTOR */
-#ifdef BSP_USING_DWT
-#ifdef BSP_USING_HT_MOTOR
-#include "ht04.h"
-#endif /* BSP_USING_HT_MOTOR */
-#ifdef BSP_USING_LK_MOTOR
 #include "lk_motor.h"
-#endif /* BSP_USING_LK_MOTOR */
+#include "ht04.h"
 #include "drv_dwt.h"
-#endif /* BSP_USING_PS_MSG */
-#ifdef BSP_USING_PS_MSG
-#include "drv_msg.h"
-#endif /* BSP_USING_IST8310 */
-#ifdef BSP_USING_MAG
-#include "mag.h"
-#endif /* BSP_USING_IST8310 */
-#ifdef BSP_USING_IMU
-#include "imu.h"
-#endif /* BSP_USING_RC_SBUS */
-#ifdef BSP_USING_RC_SBUS
-#include "rc_sbus.h"
-#endif /* BSP_USING_RC_SBUS */
-#ifdef BSP_USING_LEG
 #include "drv_leg.h"
-#endif /* BSP_USING_LEG */
+#include "hal_can.h"
+#include "drv_PWM.h"
+#include "BMI088driver.h"
+#include "uMCN.h"
+#include "bsp_log.h"
+#include "rc_dbus.h"
+#include "Referee_system.h"
 
 #endif /* _RM_MODULE_H */

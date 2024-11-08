@@ -1,40 +1,30 @@
-/*
-* Change Logs:
-* Date            Author          Notes
-* 2023-09-15      ChuShicheng     first version
-*/
+//
+// Created by 14685 on 2023/2/5.
+//
 
 #include "ins_task.h"
-#include "rm_config.h"
-#include "rm_algorithm.h"
+#include "cmsis_os.h"
 #include "rm_module.h"
-#include "rm_task.h"
+#include "rm_algorithm.h"
+#include "robot.h"
 
-#define DBG_TAG   "ins.task"
-#define DBG_LVL DBG_INFO
-#include <rtdbg.h>
+#define X 0
+#define Y 1
+#define Z 2
+
+/* ------------------------------- ipc 线程间通讯相关 ------------------------------ */
+MCN_DECLARE(ins_topic);
+static struct ins_msg ins_data;
 
 /* ----------------------------- IMU_TEMPRETURE ----------------------------- */
-#define TEMP_PWM_DEV_NAME        "pwm10"        /* PWM设备名称 */
-#define TEMP_PWM_DEV_CHANNEL      1             /* PWM通道 */
 #define IMU_TARGET_TEMP           40            /* imu期望恒温温度 */
 
-static struct rt_device_pwm *temp_pwm_dev;      /* 温度PWM设备句柄 */
-static rt_uint32_t period = 250000;
-static rt_uint32_t pulse = 0;
-static float temp;
+static uint32_t period = 250000;
+static uint32_t pulse = 0;
 static pid_obj_t *imu_temp_pid;
-// TODO:使用宏替换
-static pid_config_t imu_temp_config = {
-        .Kp = 50000, // 4.5
-        .Ki = 8000,  // 0
-        .Kd = 0,  // 0
-        .IntegralLimit = 50000,
-        .Improve = PID_Integral_Limit,
-        .MaxOut = 250000,
-};
+static pid_config_t imu_temp_config = INIT_PID_CONFIG(210, 4, 0, 10, 1100, PID_Integral_Limit);
 
-static rt_err_t temp_pwm_init(rt_uint32_t period, rt_uint32_t pulse);
+static void temp_pwm_init(uint32_t period, uint32_t pulse);
 /* ----------------------------- IMU_TEMPRETURE ----------------------------- */
 
 /* ---------------------------- Attitude_Solving ---------------------------- */
@@ -54,44 +44,44 @@ static void QuaternionToEularAngle(float *q, float *Yaw, float *Pitch, float *Ro
 static void EularAngleToQuaternion(float Yaw, float Pitch, float Roll, float *q);
 static void InitQuaternion(float *init_q4);
 
-static struct ins_msg ins_msg_p;
 /* ---------------------------- Attitude_Solving ---------------------------- */
 static float ins_dt;
-
-void ins_thread_entry(void *argument)
+__attribute__((noreturn)) void ins_task_entry(void const *argument)
 {
-    static publisher_t *ins_pub;
+    /* USER CODE BEGIN InsTask */
     static float ins_start;
     static uint32_t ins_dwt = 0;
     static float dt = 0;
     static uint32_t count = 0;
     const float gravity[3] = {0, 0, 9.81f};
 
-    temp_pwm_init(period, pulse);
     imu_temp_pid = pid_register(&imu_temp_config);   /* 注册 PID 实例 */
-    imu_ops.imu_init();
+    HAL_TIM_PWM_Start(&htim10, TIM_CHANNEL_1);
+    BMI088_Read(&BMI088);
+    ins_init();
 
     dt = dwt_get_delta(&ins_dwt);
-    ins_init();
-    ins_pub = pub_register("ins_msg", sizeof(struct ins_msg));
-
-    LOG_I("Ins Task Start");
-    for (;;)
+    ins_start = dwt_get_time_ms();
+    
+    uint32_t ins_wake_time = osKernelSysTick();
+    PrintLog("[freeRTOS] Ins Task Start\n");
+    /* Infinite loop */
+    for(;;)
     {
 /* ------------------------------ 调试监测线程调度 ------------------------------ */
+        ins_dt = dwt_get_time_ms() - ins_start;
         ins_start = dwt_get_time_ms();
 /* ------------------------------ 调试监测线程调度 ------------------------------ */
 
         dt = dwt_get_delta(&ins_dwt);
-        imu_ops.gyro_read(ins.gyro);
-        imu_ops.accel_read(ins.accel);
-
-        // 用于修正安装误差,暂时没用
+        BMI088_Read(&BMI088);
+        ins.accel[0] = BMI088.accel[0];
+        ins.accel[1] = BMI088.accel[1];
+        ins.accel[2] = BMI088.accel[2];
+        ins.gyro[0] = BMI088.gyro[0];
+        ins.gyro[1] = BMI088.gyro[1];
+        ins.gyro[2] = BMI088.gyro[2];
         IMU_Param_Correction(&imu_param, ins.gyro, ins.accel);
-        // 计算重力加速度矢量和b系的XY两轴的夹角,可用作功能扩展,本demo暂时没用
-        // ins.atanxz = -atan2f(ins.accel[X], ins.accel[Z]) * 180 / PI;
-        // ins.atanyz = atan2f(ins.accel[Y], ins.accel[Z]) * 180 / PI;
-
         // 核心函数,EKF更新四元数
         IMU_QuaternionEKF_Update(ins.gyro[X], ins.gyro[Y], ins.gyro[Z], ins.accel[X], ins.accel[Y], ins.accel[Z], dt);
 
@@ -109,61 +99,44 @@ void ins_thread_entry(void *argument)
         {
             ins.motion_accel_b[i] = (ins.accel[i] - gravity_b[i]) * dt / (ins.accel_lpf + dt) + ins.motion_accel_b[i] * ins.accel_lpf / (ins.accel_lpf + dt);
         }
-        BodyFrameToEarthFrame(ins.motion_accel_b, ins.motion_accel_b, ins.q); // 转换回导航系n
+        BodyFrameToEarthFrame(ins.motion_accel_b, ins.motion_accel_n, ins.q); // 转换回导航系n
 
         ins.yaw = QEKF_INS.Yaw;
         ins.pitch = QEKF_INS.Pitch;
         ins.roll = QEKF_INS.Roll;
         ins.yaw_total_angle = QEKF_INS.YawTotalAngle;
 
-
         {/* publish msg */
             // FIXME:/* 根据陀螺仪安装情况进行调整 */
             // NOTE: yaw轴右为正，pitch轴上为正，roll轴顺时针为正
-            ins_msg_p.yaw = -ins.yaw;
-            ins_msg_p.pitch = ins.roll;
-            ins_msg_p.roll = ins.pitch;
-            ins_msg_p.yaw_total_angle = -ins.yaw_total_angle;
-            ins_msg_p.accel[0] = ins.accel[0];
-            ins_msg_p.accel[1] = ins.accel[1];
-            ins_msg_p.accel[2] = ins.accel[2];
-            ins_msg_p.gyro[0] =-ins.gyro[0];
-            ins_msg_p.gyro[1] = ins.gyro[1];
-            ins_msg_p.gyro[2] =-ins.gyro[2];
-            pub_push_msg(ins_pub, &ins_msg_p);
+            ins_data.yaw = -ins.yaw;
+            ins_data.roll = ins.pitch;
+            ins_data.yaw_total_angle = -ins.yaw_total_angle;
+            ins_data.pitch = ins.roll;
+            ins_data.gyro[0] =-ins.gyro[0];
+            ins_data.gyro[1] = ins.gyro[1];
+            ins_data.gyro[2] =-ins.gyro[2];
+            ins_data.accel[0] = ins.accel[0];
+            ins_data.accel[1] = ins.accel[1];
+            ins_data.accel[2] = ins.accel[2];
+            ins_data.motion_accel_b[0] = ins.motion_accel_b[0];
+            ins_data.motion_accel_b[1] = ins.motion_accel_b[1];
+            ins_data.motion_accel_b[2] = ins.motion_accel_b[2];
+            mcn_publish(MCN_HUB(ins_topic), &ins_data);
         }
 
- /* ------------------------ temperature control 500hz ----------------------- */
+        // temperature control
         if ((count % 2) == 0)
         {
-            temp = imu_ops.temp_read();
-            pulse = pid_calculate(imu_temp_pid, temp, IMU_TARGET_TEMP);
-            rt_pwm_set_pulse(temp_pwm_dev, TEMP_PWM_DEV_CHANNEL, pulse);
+            // 500hz
+            pulse = pid_calculate(imu_temp_pid, BMI088.temperature, IMU_TARGET_TEMP);
+            TIM_Set_PWM(&htim10, TIM_CHANNEL_1, pulse);
         }
 
         count++;
-
-/* ------------------------------ 调试监测线程调度 ------------------------------ */
-        ins_dt = dwt_get_time_ms() - ins_start;
-        if (ins_dt > 1)
-            LOG_E("Ins Task is being DELAY! dt = [%f]", &ins_dt);
-/* ------------------------------ 调试监测线程调度 ------------------------------ */
-        rt_thread_delay(1);
+        vTaskDelayUntil(&ins_wake_time, 1);
     }
-}
-
-static rt_err_t temp_pwm_init(rt_uint32_t period, rt_uint32_t pulse)
-{
-    temp_pwm_dev = (struct rt_device_pwm *)rt_device_find(TEMP_PWM_DEV_NAME);
-    if (temp_pwm_dev == RT_NULL)
-    {
-        LOG_E("Can't find %s device!", TEMP_PWM_DEV_NAME);
-        return -RT_ERROR;
-    }
-    /* 设置PWM周期和脉冲宽度默认值 */
-    rt_pwm_set(temp_pwm_dev, TEMP_PWM_DEV_CHANNEL, period, pulse);
-    /* 使能设备 */
-    rt_pwm_enable(temp_pwm_dev, TEMP_PWM_DEV_CHANNEL);
+    /* USER CODE END InsTask */
 }
 
 /**
@@ -197,7 +170,10 @@ static void InitQuaternion(float *init_q4)
     // 读取100次加速度计数据,取平均值作为初始值
     for (uint8_t i = 0; i < 100; ++i)
     {
-        imu_ops.accel_read(acc_init);
+        BMI088_Read(&BMI088);
+        acc_init[0] = BMI088.accel[0];
+        acc_init[1] = BMI088.accel[1];
+        acc_init[3] = BMI088.accel[2];
         dwt_delay_s(0.001);
     }
     for (uint8_t i = 0; i < 3; ++i)

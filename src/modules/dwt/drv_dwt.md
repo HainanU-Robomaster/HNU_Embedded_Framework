@@ -35,7 +35,6 @@ end = dwt_get_time_ms()-start;
         float tstart = dwt_get_time_s();      \
         code;                                    \
         dt = dwt_get_time_s() - tstart;       \
-        LOG_I("" #dt " = %f s\r\n", dt); \
     } while (0)
 
 ```

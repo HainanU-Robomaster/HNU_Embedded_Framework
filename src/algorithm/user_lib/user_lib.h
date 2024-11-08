@@ -15,8 +15,7 @@
 
 #include "stdint.h"
 #include "stm32f407xx.h"
-#include "src/algorithm/arm_math/arm_math.h"
-
+#include "arm_math.h"
 
 #ifndef user_malloc
 #ifdef _CMSIS_OS_H

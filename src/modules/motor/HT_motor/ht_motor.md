@@ -116,13 +116,13 @@ void ht_motor_control();
 /**
  * @brief 停止电机,注意不是将设定值设为零,而是直接给电机发送的电流值置零
  */
-void ht_motor_relax(ht_motor_object_t *motor);
+void ht_motor_disable_all(ht_motor_object_t *motor);
 
 /**
  * @brief 启动电机,此时电机会响应设定值
  *        初始化时不需要此函数,因为stop_flag的默认值为0
  */
-void ht_motor_enable(ht_motor_object_t *motor);
+void ht_motor_enable_all(ht_motor_object_t *motor);
 
 /**
  * @brief 电机反馈报文接收回调函数,该函数被can_rx_call调用
@@ -138,7 +138,7 @@ void ht_motot_rx_callback(rt_device_t dev, uint32_t id, uint8_t *data);
 
 - `ht_motor_control()`是根据电机的配置计算控制值的函数。该函数在`motor_task.c`中被调用，以一定频率运行。
 
-- `ht_motor_relax()`和`ht_motor_enable()`用于控制电机的启动和停止。当电机被设为stop的时候，不会响应任何的参考输入。
+- `ht_motor_disable_all()`和`ht_motor_enable_all()`用于控制电机的启动和停止。当电机被设为stop的时候，不会响应任何的参考输入。
 
 ## 私有函数和变量
 

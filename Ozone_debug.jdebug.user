@@ -1,0 +1,21 @@
+
+
+Breakpoint=D:/STM32Projects/RM_C/2023/DOWN/src/modules/BMI088/BMI088driver.c:264, State=BP_STATE_DISABLED
+OpenDocument="BMI088driver.c", FilePath="D:/STM32Projects/RM_C/2023/DOWN/src/modules/BMI088/BMI088driver.c", Line=115
+OpenDocument="rc_sbus.c", FilePath="D:/STM32Projects/RM_C/2023/DOWN/src/modules/rc/sbus/rc_sbus.c", Line=99
+OpenDocument="stm32f4xx_hal.c", FilePath="D:/STM32Projects/RM_C/2023/DOWN/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.c", Line=314
+OpenDocument="main.c", FilePath="D:/STM32Projects/RM_C/2023/DOWN/Core/Src/main.c", Line=100
+OpenDocument="stm32f4xx_hal_spi.c", FilePath="D:/STM32Projects/RM_C/2023/DOWN/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_spi.c", Line=1304
+OpenToolbar="Debug", Floating=0, x=0, y=0
+OpenWindow="Registers 1", DockArea=RIGHT, x=0, y=0, w=300, h=638, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0, FilteredItems=[], RefreshRate=1
+OpenWindow="Memory 1", DockArea=BOTTOM, x=2, y=0, w=356, h=319, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0, EditorAddress=0x0
+OpenWindow="Watched Data 1", DockArea=LEFT, x=0, y=1, w=300, h=239, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
+OpenWindow="Functions", DockArea=LEFT, x=0, y=0, w=300, h=398, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
+OpenWindow="Terminal", DockArea=BOTTOM, x=1, y=0, w=580, h=319, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
+OpenWindow="Console", DockArea=BOTTOM, x=0, y=0, w=626, h=319, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
+TableHeader="Functions", SortCol="Name", SortOrder="ASCENDING", VisibleCols=["Name";"Address";"Size";"#Insts";"Source"], ColWidths=[1236;100;100;100;194]
+TableHeader="Power Sampling", SortCol="Index", SortOrder="ASCENDING", VisibleCols=["Index";"Time";"Ch 0"], ColWidths=[100;100;100]
+TableHeader="Registers 1", SortCol="Name", SortOrder="ASCENDING", VisibleCols=["Name";"Value";"Description"], ColWidths=[100;105;224]
+TableHeader="Watched Data 1", SortCol="Expression", SortOrder="ASCENDING", VisibleCols=["Expression";"Value";"Location";"Refresh"], ColWidths=[100;100;100;100]
+TableHeader="RegisterSelectionDialog", SortCol="None", SortOrder="ASCENDING", VisibleCols=[], ColWidths=[]
+TableHeader="TargetExceptionDialog", SortCol="Name", SortOrder="ASCENDING", VisibleCols=["Name";"Value";"Address";"Description"], ColWidths=[26;26;26;26]

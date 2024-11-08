@@ -8,9 +8,22 @@
 
 #define CPU_FREQUENCY 168     /* CPU主频(mHZ) */
 
-/* 底盘和云台分别对应的 can 设备名称 */
-#define CAN_CHASSIS    "can1"
-#define CAN_GIMBAL     "can2"
+#define WHEEL_LEG_INFANTRY
+#define BSP_CHASSIS_LEG_MODE
+
+#include "stm32f407xx.h" // 使用的芯片
+#include "cmsis_os.h" // 使用的 OS 头文件
+#ifdef _CMSIS_OS_H
+#define user_malloc pvPortMalloc
+#define user_free vPortFree
+#else
+#define user_malloc malloc
+#define user_malloc free
+#endif
+
+/* 底盘和云台分别对应的 can 总线 */
+#define CAN_CHASSIS    hcan1
+#define CAN_GIMBAL     hcan2
 
 /* 磁力计所挂载的 i2c 设备名称(软件i2c) */
 #define I2C_MAG        "i2c1"    //"Notice: PA8 --> 8; PC9 --> 41"
@@ -21,10 +34,6 @@
 /* 加速度计所挂载的 SPI 设备名称及 CS 引脚 */
 #define SPI_ACC        "spi1"
 #define SPI_ACC_CS     4
-
-/* 弹仓盖舵机所挂载的 PWM 设备及通道号 */
-#define PWM_COVER        "pwm1"
-#define PWM_COVER_CH     2
 
 /* 遥控器所挂载的 usart 设备名称 */
 #define USART_RC       "uart3"
@@ -48,12 +57,15 @@
 /* 云台yaw轴速度 */
 #define GIMBAL_RC_MOVE_RATIO_YAW 0.5f
 
-/* 遥控器拨杆对应档位值 */
-#define RC_UP_VALUE 240
-#define RC_MID_VALUE 0
-#define RC_DN_VALUE 15
-
 /* ---------------------------------- 底盘相关 ---------------------------------- */
+#ifdef WHEEL_LEG_INFANTRY
+/* 底盘轮距(m) */
+#define WHEEL_DISTANCE    0.110f
+/* 底盘轮子半径(m) */
+#define WHEEL_RADIUS      0.1f
+/* 底盘控制间隔(ms) */
+#define CHASSIS_PERIOD    1.0f
+#else
 /* 底盘轮距(mm) */
 #define WHEELTRACK        300
 /* 底盘轴距(mm) */
@@ -63,6 +75,9 @@
 
 #define LENGTH_A 278 //底盘长的一半(mm)
 #define LENGTH_B 294 //底盘宽的一半(mm)
+#endif
+
+#define CHASSIS_PERIOD     1.0f //(ms)
 
 /******** 底盘电机使用3508 *******/
 /* 3508底盘电机减速比 */
@@ -72,10 +87,10 @@
 
 /******** 底盘最大速度设置 *******/
 /* 底盘移动最大速度，单位是毫米每秒 */
-#define MAX_CHASSIS_VX_SPEED 5000
-#define MAX_CHASSIS_VY_SPEED 5000
+#define MAX_CHASSIS_VX_SPEED 2000
+#define MAX_CHASSIS_VY_SPEED 20 // 对应平步底盘，该值为roll轴倾斜
 /* 底盘旋转最大速度，单位是度每秒 */
-#define MAX_CHASSIS_VR_SPEED 8
+#define MAX_CHASSIS_VR_SPEED 360
 
 /* --------------------------------- 底盘PID参数 -------------------------------- */
 /* 电机速度环 */
@@ -103,11 +118,6 @@
 #define PIT_ANGLE_MAX        31.5f
 /* pitch轴最大俯角 */
 #define PIT_ANGLE_MIN        -32.9f
-
-/* 云台控制周期 (ms) */
-#define GIMBAL_PERIOD 1
-/* 云台回中初始化时间 (ms) */
-#define BACK_CENTER_TIME 1000
 
 /* -------------------------------- 云台电机PID参数 ------------------------------- */
 /* 云台yaw轴电机PID参数 */
@@ -162,44 +172,17 @@
 #define PITCH_INTEGRAL_A_AUTO    0
 #define PITCH_MAX_A_AUTO         0
 
-/* ---------------------------------- 发射相关 ---------------------------------- */
-// TODO: 实际值待整定
-#define RIGHT_FRICTION_MOTOR_ID     0x201
-#define LEFT_FRICTION_MOTOR_ID   0x202
-#define TRIGGER_MOTOR_ID  0x203
+/* -------------------------------------------------------------------------- */
+/*                                   上下板间通讯                                   */
+/* -------------------------------------------------------------------------- */
+#define CAN_UP_TX_INFO 0x334
+/* 上下板CAN通信的扩展标识符 */
+#define CAN_RPY_TX          0x340   /* 底盘跟随云台相对角度 */
+// #define CAN_ODOM_TX_ONE     0x141   /* odom数据帧第一帧 */
+// #define CAN_ODOM_TX_TWO     0x142   /* odom数据帧第二帧 */
+// #define CAN_ODOM_TX_THREE   0x143   /* odom数据帧第二帧 */
 
-#define TRIGGER_MOTOR_45_TO_ANGLE 45
-/* -------------------------------- 发射电机PID参数 ------------------------------- */
-// TODO: 速度期望应改为变量应对速度切换。初次参数调整已完成
-/* 右摩擦轮M3508电机PID参数 */
-/* 速度环 */
-#define RIGHT_KP_V             18
-#define RIGHT_KI_V             2
-#define RIGHT_KD_V             0.02f
-#define RIGHT_INTEGRAL_V       2000
-#define RIGHT_MAX_V            30000
-
-/* 左摩擦轮M3508电机PID参数 */
-/* 速度环 */
-#define LEFT_KP_V           18
-#define LEFT_KI_V           2
-#define LEFT_KD_V           0.02f
-#define LEFT_INTEGRAL_V     2000
-#define LEFT_MAX_V          30000
-
-// TODO：PID参数初次微调已完成，期待后续微调
-/* 拨弹电机M2006电机PID参数 */
-/* 速度环 */
-#define TRIGGER_KP_V           10
-#define TRIGGER_KI_V           5
-#define TRIGGER_KD_V           0.01f
-#define TRIGGER_INTEGRAL_V     1500
-#define TRIGGER_MAX_V          20000
-/* 角度环 */
-#define TRIGGER_KP_A           20
-#define TRIGGER_KI_A           2
-#define TRIGGER_KD_A           0
-#define TRIGGER_INTEGRAL_A     10
-#define TRIGGER_MAX_A          5000
+#define CAN_GIM_STATE         0x345   /* 底盘状态数据 */
+#define CAN_REFEREE_INFO      0x348   /* 裁判系统数据 */
 
 #endif /* _RM_CONFIG_H */

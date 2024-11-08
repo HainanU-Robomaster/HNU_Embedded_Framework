@@ -15,10 +15,6 @@
  */
 #include "drv_dwt.h"
 
-#define DBG_TAG           "bsp.dwt"
-#define DBG_LVL DBG_INFO
-#include <rtdbg.h>
-
 static dwt_time_t systime;
 static uint32_t cpu_freq_hz, cpu_freq_hz_ms, cpu_freq_hz_us;
 static uint32_t CYCCNT_rount_count;
@@ -130,8 +126,12 @@ uint64_t dwt_get_time_us(void)
 
 void dwt_delay_s(float delay)
 {
-    uint32_t tickstart = DWT_CYCCNT;
+    volatile uint32_t tickstart = DWT_CYCCNT;
     float wait = delay;
+    static uint8_t flag;
 
-    while ((DWT_CYCCNT - tickstart) < wait * (float)cpu_freq_hz);
+    while (flag)
+    {
+        flag = (DWT_CYCCNT - tickstart) < (wait * (float)cpu_freq_hz);
+    }
 }

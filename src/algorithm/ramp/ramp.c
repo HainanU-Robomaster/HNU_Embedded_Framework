@@ -2,6 +2,7 @@
 // Created by turboDog on 2021/11/21.
 //
 
+#include <string.h>
 #include "ramp.h"
 
 static uint8_t idx = 0; // register idx,是该文件的全局ramp索引,在注册时使用
@@ -42,8 +43,8 @@ float ramp_calc(ramp_obj_t *ramp)
  */
 ramp_obj_t *ramp_register(int32_t count,int32_t scale)
 {
-    ramp_obj_t *object = (ramp_obj_t *)rt_malloc(sizeof(ramp_obj_t));
-    rt_memset(object, 0, sizeof(ramp_obj_t));
+    ramp_obj_t *object = (ramp_obj_t *)user_malloc(sizeof(ramp_obj_t));
+    memset(object, 0, sizeof(ramp_obj_t));
 
     object->count = count;
     object->scale = scale;

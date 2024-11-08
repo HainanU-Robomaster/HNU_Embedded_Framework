@@ -1,118 +1,158 @@
  /**
- * @file rm_algorithm.h
- * @author ChuShicheng
- * @author modified by neozng
- * @brief  RM电控算法库,仅被应用层调用
- * @date 2023-09-04
+ * @file rm_task.h
+ * @brief  注意该文件应只用于任务初始化,只能被robot.c包含
+ * @date 2023-12-28
  */
 
  /*
  * Change Logs:
  * Date            Author          Notes
- * 2023-09-04      ChuShicheng     first version
+ * 2023-12-28      ChuShicheng     first version
  */
 #ifndef _RM_TASK_H
 #define _RM_TASK_H
 
-#include <rtthread.h>
+#include "rm_config.h"
+#include "rm_module.h"
+#include "cmsis_os.h"
 
-#ifdef BSP_USING_EXAMPLE_TASK
-#include "example_task.h"
-#endif /* BSP_USING_EXAMPLE_TASK */
-#ifdef BSP_USING_INS_TASK
 #include "ins_task.h"
-#endif /* BSP_USING_INS_TASK */
-#ifdef BSP_USING_MOTOR_TASK
 #include "motor_task.h"
-#endif /* BSP_USING_MOTOR_TASK */
-#ifdef BSP_USING_CMD_TASK
 #include "cmd_task.h"
-#endif /* BSP_USING_CMD_TASK */
-#ifdef BSP_USING_CHASSIS_TASK
 #include "chassis_task.h"
-#endif /* BSP_USING_CHASSIS_TASK */
-#ifdef BSP_USING_GIMBAL_TASK
-#include "gimbal_task.h"
-#endif /* BSP_USING_GIMBAL_TASK */
-#ifdef BSP_USING_TRANSMISSION_TASK
-#include "transmission_task.h"
-#endif /* BSP_USING_TRANSMISSION_TASK */
-#ifdef BSP_USING_SHOOT_TASK
-#include "shoot_task.h"
-#endif /* BSP_USING_SHOOT_TASK */
+#include "trans_task.h"
+#include "referee_task.h"
 
+/* ---------------------------------- 线程相关 ---------------------------------- */
+osThreadId insTaskHandle;
+osThreadId robotTaskHandle;
+osThreadId motorTaskHandle;
+osThreadId transTaskHandle;
+osThreadId refereeTaskHandle;
 
-/* --------------------------------- 话题的数据格式 -------------------------------- */
-struct ins_msg
+void ins_task_entry(void const *argument);
+void motor_task_entry(void const *argument);
+void robot_task_entry(void const *argument);
+void trans_task_entry(void const *argument);
+void referee_task_entry(void const *argument);
+
+static float motor_dt;
+static float robot_dt;
+static float trans_dt;
+static float referee_dt;
+
+/**
+ * @brief 初始化机器人任务,所有持续运行的任务都在这里初始化
+ *
+ */
+void OS_task_init()
 {
-    // IMU量测值
-    float gyro[3];  // 角速度
-    float accel[3]; // 加速度
-    // 位姿
-    float roll;
-    float pitch;
-    float yaw;
-    float yaw_total_angle;
-};
+    osThreadDef(instask, ins_task_entry, osPriorityAboveNormal, 0, 1024);
+    insTaskHandle = osThreadCreate(osThread(instask), NULL); // 为姿态解算设置较高优先级,确保以1khz的频率执行
 
-/* ----------------CMD应用发布的控制数据,应当由gimbal/chassis/shoot订阅---------------- */
-/**
- * @brief cmd发布的底盘控制数据,由chassis订阅
- */
-struct chassis_cmd_msg
+    osThreadDef(motortask, motor_task_entry, osPriorityNormal, 0, 512);
+    motorTaskHandle = osThreadCreate(osThread(motortask), NULL);
+
+    osThreadDef(robottask, robot_task_entry, osPriorityNormal, 0, 2048);
+    robotTaskHandle = osThreadCreate(osThread(robottask), NULL);
+
+    osThreadDef(transtask, trans_task_entry, osPriorityNormal, 0, 1024);
+    transTaskHandle = osThreadCreate(osThread(transtask), NULL);
+
+    osThreadDef(refereetask, referee_task_entry, osPriorityNormal, 0, 1024);
+    refereeTaskHandle = osThreadCreate(osThread(refereetask), NULL);
+}
+
+__attribute__((noreturn)) void motor_task_entry(void const *argument)
 {
-    float vx;                  // 前进方向速度
-    float vy;                  // 横移方向速度
-    float vw;                  // 旋转速度
-    float offset_angle;        // 底盘和归中位置的夹角
-    chassis_mode_e ctrl_mode;  // 当前底盘控制模式
-    chassis_mode_e last_mode;  // 上一次底盘控制模式
-};
+    float motor_start = dwt_get_time_ms();
+    PrintLog("[freeRTOS] Motor Task Start\n");
+    uint32_t motor_wake_time = osKernelSysTick();
+    for (;;)
+    {
+/* ------------------------------ 调试监测线程调度 ------------------------------ */
+        motor_dt = dwt_get_time_ms() - motor_start;
+        motor_start = dwt_get_time_ms();
+        if (motor_dt > 1.5)
+            PrintLog("[freeRTOS] Motor Task is being DELAY! dt = [%f]\n", &motor_dt);
+/* ------------------------------ 调试监测线程调度 ------------------------------ */
 
-/**
- * @brief cmd发布的云台控制数据,由gimbal订阅
- */
-struct gimbal_cmd_msg
-{ // 云台期望角度控制
-    float yaw;
-    float pitch;
-    gimbal_mode_e ctrl_mode;  // 当前云台控制模式
-    gimbal_mode_e last_mode;  // 上一次云台控制模式
-};
+        motor_control_task();
 
-/**
- * @brief cmd发布的云台控制数据,由shoot订阅
- */
-struct shoot_cmd_msg
-{ // 发射器
-    shoot_mode_e ctrl_mode;  // 当前发射器控制模式
-    shoot_mode_e last_mode;  // 上一次发射器控制模式
-    trigger_mode_e trigger_status;
-    int16_t shoot_freq;      // 发射弹频
-    // TODO: 添加发射弹速控制
-    int16_t shoot_speed;     // 发射弹速
-    uint8_t cover_open;      // 弹仓盖开关
-};
+        vTaskDelayUntil(&motor_wake_time, 1);
+    }
+}
 
-/* ------------------------------ gimbal反馈状态数据 ------------------------------ */
-/**
- * @brief 云台真实反馈状态数据,由gimbal发布
- */
-struct gimbal_fdb_msg
+__attribute__((noreturn)) void robot_task_entry(void const *argument)
 {
-    gimbal_back_e back_mode;  // 云台归中情况
+    float robot_start = dwt_get_time_ms();
+    PrintLog("[freeRTOS] Robot Task Start\n");
+    uint32_t robot_wake_time = osKernelSysTick();
+    for (;;)
+    {
+/* ------------------------------ 调试监测线程调度 ------------------------------ */
+        robot_dt = dwt_get_time_ms() - robot_start;
+        robot_start = dwt_get_time_ms();
+        if (robot_dt > 5.5)
+            PrintLog("[freeRTOS] Robot Task is being DELAY! dt = [%f]\n", &robot_dt);
+/* ------------------------------ 调试监测线程调度 ------------------------------ */
 
-    float yaw_offset_angle;    //云台初始 yaw 轴角度 （由imu得）
-    float pit_offset_angle;    //云台初始 pit 轴角度 （由imu得）
-    float yaw_relative_angle;  //云台相对于初始位置的yaw轴角度
-};
+        cmd_control_task();
+        chassis_control_task();
 
-/* ------------------------------ shoot反馈状态数据 ------------------------------ */
-/**
- * @brief 发射机真实反馈状态数据,由shoot发布
- */
-struct shoot_fdb_msg
+        vTaskDelayUntil(&robot_wake_time, 3);  // 平衡步兵需要1khz
+    }
+}
+
+ __attribute__((noreturn)) void trans_task_entry(void const *argument)
 {
-    shoot_back_e shoot_mode;  // shoot状态反馈
-};
+    float trans_start = dwt_get_time_ms();
+    PrintLog("[freeRTOS] Trans Task Start\n");
+    uint32_t trans_wake_time = osKernelSysTick();
+    for (;;)
+    {
+/* ------------------------------ 调试监测线程调度 ------------------------------ */
+        trans_dt = dwt_get_time_ms() - trans_start;
+        trans_start = dwt_get_time_ms();
+        if (trans_dt > 1.5)
+             PrintLog("[freeRTOS] Trans Task is being DELAY! dt = [%f]\n", &trans_dt);
+/* ------------------------------ 调试监测线程调度 ------------------------------ */
+
+        trans_control_task();
+
+        vTaskDelayUntil(&trans_wake_time, 1);
+    }
+}
+
+__attribute__((noreturn)) void referee_task_entry(void const *argument)
+{
+    /* USER CODE BEGIN RefereeTask */
+    static float referee_start;
+    static uint32_t referee_dwt = 0;
+    static float dt = 0;
+    static uint32_t count = 0;
+
+    // referee_UI_task_init();
+
+    dt = dwt_get_delta(&referee_dwt);
+    referee_start = dwt_get_time_ms();
+    
+    uint32_t referee_wake_time = osKernelSysTick();
+    PrintLog("[freeRTOS] Ins Task Start\n");
+    /* Infinite loop */
+    for(;;)
+    {
+/* ------------------------------ 调试监测线程调度 ------------------------------ */
+        referee_dt = dwt_get_time_ms() - referee_start;
+        referee_start = dwt_get_time_ms();
+/* ------------------------------ 调试监测线程调度 ------------------------------ */
+
+        dt = dwt_get_delta(&referee_dwt);
+
+        referee_control_task();
+
+        vTaskDelayUntil(&referee_wake_time, 10); // 100hz
+    }
+}
+
 #endif /* _RM_TASK_H */
