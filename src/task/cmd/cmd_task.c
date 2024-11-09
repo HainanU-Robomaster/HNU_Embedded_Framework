@@ -569,7 +569,10 @@ static void remote_to_cmd_pc_DT7(void)
             break;
 
         case SHOOT_COUNTINUE:
-            if((rc_now->mouse.l==1||rc_now->wheel>=200)&&shoot_cmd.friction_status==1&&(referee_fdb.power_heat_data.shooter_id1_17mm_cooling_heat < (referee_fdb.robot_status.shooter_barrel_heat_limit-10)))
+            if((rc_now->mouse.l==1||rc_now->wheel>=200)&&shoot_cmd.friction_status==1
+            &&(referee_fdb.power_heat_data.shooter_id1_17mm_cooling_heat < (referee_fdb.robot_status.shooter_barrel_heat_limit-10) || referee_fdb.robot_status.robot_id == 0)
+            //在未连接裁判系统时机器人ID为0，此时忽略裁判系统枪口热量进行开火，但未验证在链接裁判系统后没有连接到服务器时ID是否也为0以及链接裁判系统的其他情况，从而导致在未经允许的情况下解除保险开火
+            )
             {
                 shoot_cmd.shoot_freq= DBUS_FRICTION_AUTO_SPEED_H;
                 /*!扳机连发功率限制如果未挂载功率限制，发射频率置为一个合适速度*/

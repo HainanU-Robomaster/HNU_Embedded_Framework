@@ -194,16 +194,20 @@ static void ins_init(void)
 static void InitQuaternion(float *init_q4)
 {
     float acc_init[3] = {0};
+    float acc_init_sum[3]={0};
     float gravity_norm[3] = {0, 0, 1}; // 导航系重力加速度矢量,归一化后为(0,0,1)
     float axis_rot[3] = {0};           // 旋转轴
     // 读取100次加速度计数据,取平均值作为初始值
     for (uint8_t i = 0; i < 100; ++i)
     {
         imu_ops.accel_read(acc_init);
+        acc_init_sum[0] += acc_init[0];
+        acc_init_sum[1] += acc_init[1];
+        acc_init_sum[2] += acc_init[2];
         dwt_delay_s(0.001);
     }
     for (uint8_t i = 0; i < 3; ++i)
-        acc_init[i] /= 100;
+        acc_init_sum[i] /= 100;
     Norm3d(acc_init);
     // 计算原始加速度矢量和导航系重力加速度矢量的夹角
     float angle = acosf(Dot3d(acc_init, gravity_norm));
