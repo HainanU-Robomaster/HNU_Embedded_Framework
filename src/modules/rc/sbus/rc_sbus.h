@@ -9,19 +9,20 @@
 #ifndef _RC_SBUS_H
 #define _RC_SBUS_H
 
-#include <rtthread.h>
-#include "rm_config.h"
+#include "main.h"
 
 #define SBUS_RX_BUF_NUM 36u
 #define SBUS_FRAME_SIZE 25u
+
+extern uint8_t sbus_rx_buf[2][SBUS_RX_BUF_NUM];
 
 /**
   * @brief 遥控器拨杆值
   */
 enum {
-    RC_UP = RC_UP_VALUE  ,
-    RC_MI = RC_MID_VALUE ,
-    RC_DN = RC_DN_VALUE  ,
+    RC_UP = 240,
+    RC_MI = 0,
+    RC_DN = 15,
 };
 
 typedef struct
@@ -46,5 +47,12 @@ typedef struct
  * @return rc_obj_t* 指向NOW和LAST两次数据的数组起始地址
  */
 rc_obj_t *sbus_rc_init(void);
+
+/**
+ * @brief 遥控器sbus数据解析
+ *
+ * @param rc_obj 指向sbus_rc实例的指针
+ */
+int sbus_rc_decode(uint8_t *buff);
 
 #endif /* _RC_SBUS_H */

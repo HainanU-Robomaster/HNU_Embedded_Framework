@@ -20,7 +20,7 @@
 #ifndef _DRV_DWT_H
 #define _DRV_DWT_H
 
-#include <rtthread.h>
+#include "main.h"
 
 //寄存器基地址
 #define    DWT_CR    *(uint32_t*)0xE0001000
@@ -49,7 +49,6 @@ typedef struct
         float tstart = dwt_get_time_s();      \
         code;                                    \
         dt = dwt_get_time_s() - tstart;       \
-        LOG_I("" #dt " = %f s\r\n", dt); \
     } while (0)
 
 /**

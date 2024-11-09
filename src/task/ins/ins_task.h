@@ -4,18 +4,10 @@
  * 2023-09-15      ChuShicheng     first version
  */
 
-#ifndef RTTHREAD_INS_TASK_H
-#define RTTHREAD_INS_TASK_H
+#ifndef _INS_H
+#define _INS_H
 
-#include <rtthread.h>
-#include "rm_algorithm.h"
-
-#define X 0
-#define Y 1
-#define Z 2
-
-#define INS_TASK_PERIOD 1
-
+#include "stdint.h"
 typedef struct
 {
     float gyro[3];  // 角速度
@@ -70,10 +62,8 @@ typedef struct
 } imu_param_t;
 
 /**
- * @brief ins线程入口函数，1kHz频率运行
- *
- * @param argument
+ * @brief 姿态解算任务主体，在主循环中被调用
  */
-void ins_thread_entry(void *argument);
+__attribute__((noreturn)) void ins_task_entry(void const *argument);
 
-#endif //RTTHREAD_INS_TASK_H
+#endif // _INS_H

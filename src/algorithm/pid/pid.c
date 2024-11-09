@@ -9,6 +9,7 @@
  * @copyrightCopyright (c) 2022 HNU YueLu EC all rights reserved
  */
 
+#include <string.h>
 #include "pid.h"
 #include "drv_dwt.h"
 
@@ -130,8 +131,8 @@ static void f_PID_ErrorHandle(pid_obj_t *pid)
  */
 pid_obj_t *pid_register(pid_config_t *config)
 {
-    pid_obj_t *object = (pid_obj_t *)rt_malloc(sizeof(pid_obj_t));
-    rt_memset(object, 0, sizeof(pid_obj_t));
+    pid_obj_t *object = (pid_obj_t *)user_malloc(sizeof(pid_obj_t));
+    memset(object, 0, sizeof(pid_obj_t));
 
     // basic parameter
     object->Kp = config->Kp;

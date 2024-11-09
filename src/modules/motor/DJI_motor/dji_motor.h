@@ -16,8 +16,8 @@
 #define _DJI_MOTOR_H
 
 #include "motor_def.h"
-#include <rtthread.h>
-#include <rtdevice.h>
+#include "rm_module.h"
+#include <stm32f4xx.h>
 
 /**
  * @brief DJI motor feedback
@@ -44,7 +44,8 @@ typedef struct
  */
 typedef struct dji_motor_object
 {
-    rt_device_t  can_dev;                   // 电机CAN实例
+    CAN_HandleTypeDef  *can;                // 电机挂载CAN句柄
+    uint8_t can_id;                         // 电机CAN id CAN1为1，CAN2为2
     dji_motor_measure_t measure;            // 电机测量值
 
     uint32_t tx_id;                         // 发送id(主发)
@@ -57,7 +58,6 @@ typedef struct dji_motor_object
     motor_working_type_e stop_flag;         // 启停标志
 
     /* 监控线程相关 */
-    rt_timer_t timer;                       // 电机监控定时器
 
     /* 电机控制相关 */
     void *controller;            // 电机控制器
@@ -101,10 +101,9 @@ void dji_motor_enable(dji_motor_object_t *motor);
 /**
  * @brief 电机反馈报文接收回调函数,该函数被can_rx_call调用
  *
- * @param dev 接收到报文的CAN设备
  * @param id 接收到的报文的id
  * @param data 接收到的报文的数据
  */
-void dji_motot_rx_callback(rt_device_t dev, uint32_t id, uint8_t *data);
+int dji_motot_rx_callback(uint32_t id, uint8_t *data);
 
 #endif /* _DJI_MOTOR_H */

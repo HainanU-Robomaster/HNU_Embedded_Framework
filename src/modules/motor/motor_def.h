@@ -12,7 +12,7 @@
 #ifndef _MOTOR_DEF_H
 #define _MOTOR_DEF_H
 
-#include <rtthread.h>
+#include "main.h"
 
 #ifndef PI
 #define PI 3.1415926535f
@@ -48,7 +48,7 @@ typedef enum
 typedef struct
 {
     motor_type_e motor_type;
-    const char *can_name;
+    uint32_t  can_id;              // 电机挂载CAN，CAN1对应1，CAN2对应2
     uint32_t tx_id;                // 发送id(主发)
     uint32_t rx_id;                // 接收id(主收)
     void *controller;              // 电机控制器
