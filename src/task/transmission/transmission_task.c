@@ -156,7 +156,7 @@ void judge_color()
 }
 
 
-void pack_Rpy(RpyTypeDef *frame, float yaw, float pitch,float openfire, float team_color)   //此处roll值作为开火标志位
+void pack_Rpy(RpyTypeDef *frame, float yaw, float pitch,float openfire, int team_color)   //此处roll值作为开火标志位
 {
     int8_t rpy_tx_buffer[FRAME_RPY_LEN] = {0} ;
     int32_t rpy_data = 0;

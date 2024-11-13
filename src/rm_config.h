@@ -163,8 +163,8 @@
 /* 云台yaw轴电机PID参数 */
 /* imu速度环 */
 #define YAW_KP_V_IMU             10000
-#define YAW_KI_V_IMU             0.5
-#define YAW_KD_V_IMU             10
+#define YAW_KI_V_IMU             0.1
+#define YAW_KD_V_IMU             1
 #define YAW_INTEGRAL_V_IMU       0
 #define YAW_MAX_V_IMU            30000
 /* imu角度环 */
@@ -182,7 +182,7 @@
 /* auto角度环 */
 #define YAW_KP_A_AUTO            0.1
 #define YAW_KI_A_AUTO            0.001
-#define YAW_KD_A_AUTO            0.00f
+#define YAW_KD_A_AUTO            0.00
 #define YAW_INTEGRAL_A_AUTO      0
 #define YAW_MAX_A_AUTO           25
 
@@ -204,7 +204,7 @@
 /* auto速度环 */
 #define PITCH_KP_V_AUTO          2000
 #define PITCH_KI_V_AUTO          0.001
-#define PITCH_KD_V_AUTO          0
+#define PITCH_KD_V_AUTO          0.00
 #define PITCH_INTEGRAL_V_AUTO    1500
 #define PITCH_MAX_V_AUTO         30000
 /* auto角度环 */

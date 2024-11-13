@@ -22,9 +22,9 @@ rt_thread_t ins_thread_handle;
 #ifdef BSP_USING_CMD_TASK
  rt_thread_t cmd_thread_handle;
 #endif /* BSP_USING_CMD_TASK */
-#ifdef BSP_USING_CHASSIS_TASK
- rt_thread_t chassis_thread_handle;
-#endif /* BSP_USING_CHASSIS_TASK */
+//#ifdef BSP_USING_CHASSIS_TASK
+// rt_thread_t chassis_thread_handle;
+//#endif /* BSP_USING_CHASSIS_TASK */
 #ifdef BSP_USING_GIMBAL_TASK
  rt_thread_t gimbal_thread_handle;
 #endif /* BSP_USING_GIMBAL_TASK */
@@ -82,16 +82,16 @@ int robot_task_init(void)
     if (cmd_thread_handle != RT_NULL)
         rt_thread_startup(cmd_thread_handle);
 #endif /* BSP_USING_CMD_TASK */
-
-#ifdef BSP_USING_CHASSIS_TASK
-    /* 创建线程，名称是 chassis ，入口是 chassis_thread_entry */
-    chassis_thread_handle = rt_thread_create("chassis",
-                                              chassis_thread_entry, RT_NULL,
-                                              1024,15, 10);
-    /* 如果获得线程控制块，启动这个线程 */
-    if (chassis_thread_handle != RT_NULL)
-        rt_thread_startup(chassis_thread_handle);
-#endif /* BSP_USING_CHASSIS_TASK */
+//
+//#ifdef BSP_USING_CHASSIS_TASK
+//    /* 创建线程，名称是 chassis ，入口是 chassis_thread_entry */
+//    chassis_thread_handle = rt_thread_create("chassis",
+//                                              chassis_thread_entry, RT_NULL,
+//                                              1024,15, 10);
+//    /* 如果获得线程控制块，启动这个线程 */
+//    if (chassis_thread_handle != RT_NULL)
+//        rt_thread_startup(chassis_thread_handle);
+//#endif /* BSP_USING_CHASSIS_TASK */
 
 #ifdef BSP_USING_GIMBAL_TASK
     /* 创建线程，名称是 gimbal ，入口是 gimbal_thread_entry */
