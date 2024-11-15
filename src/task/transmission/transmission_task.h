@@ -177,7 +177,7 @@ void transmission_task_entry(void* argument);
 /**
   * @brief 拆分并填充rpy欧拉角数据
   */
-void pack_Rpy(RpyTypeDef *frame, float yaw, float pitch,float roll,float team_color);
+void pack_Rpy(RpyTypeDef *frame, float yaw, float pitch,float roll,int team_color);
 
 /**
   * @brief 和校验，附加校验
