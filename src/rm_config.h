@@ -100,14 +100,14 @@
 
 /* --------------------------------- 底盘PID参数 -------------------------------- */
 /* 电机速度环 */
-#define CHASSIS_KP_V_MOTOR              6
+#define CHASSIS_KP_V_MOTOR              5.5
 #define CHASSIS_KI_V_MOTOR              0
-#define CHASSIS_KD_V_MOTOR              0.0001
+#define CHASSIS_KD_V_MOTOR              0.0005
 #define CHASSIS_INTEGRAL_V_MOTOR        2000
 #define CHASSIS_MAX_V_MOTOR             16000
 // TODO: 参数待整定
 /* 跟随云台PID */
-#define CHASSIS_KP_V_FOLLOW             0.1f
+#define CHASSIS_KP_V_FOLLOW             0.25f
 #define CHASSIS_KI_V_FOLLOW             0
 #define CHASSIS_KD_V_FOLLOW             0.001f
 #define CHASSIS_INTEGRAL_V_FOLLOW       0
@@ -144,11 +144,11 @@
 /* imu速度环 */
 #define YAW_KP_V_IMU             5000
 #define YAW_KI_V_IMU             0
-#define YAW_KD_V_IMU             0.8
+#define YAW_KD_V_IMU             0.08
 #define YAW_INTEGRAL_V_IMU       0
 #define YAW_MAX_V_IMU            30000
 /* imu角度环 */
-#define YAW_KP_A_IMU             0.35f
+#define YAW_KP_A_IMU             0.15f
 #define YAW_KI_A_IMU             0
 #define YAW_KD_A_IMU             0.001f
 #define YAW_INTEGRAL_A_IMU       0

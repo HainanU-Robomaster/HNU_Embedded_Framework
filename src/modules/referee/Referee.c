@@ -17,7 +17,8 @@
 //    int spin_colour;//����
 //    int fric_colour;//Ħ����
 //    int cap_open_colour;//����
-//    int Refresh_flag15=1;//׼�ĸ��±�־λ
+//    int Refresh_flag15=1;//׼�ĸ��±�־λme
+
 //    int Refresh_flag18=0;//׼�ĸ��±�־λ
 //    int Refresh_flag30=0;//׼�ĸ��±�־λ*/
 ////����ʵ���ο�

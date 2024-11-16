@@ -381,6 +381,7 @@ static void chassis_motor_init()
     }
 
     follow_pid = pid_register(&chassis_follow_config);
+    follow_pid->DeadBand = 2;
 }
 
 /* --------------------------------- 底盘解算控制 --------------------------------- */

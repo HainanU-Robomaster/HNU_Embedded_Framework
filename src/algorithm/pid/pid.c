@@ -210,6 +210,7 @@ float pid_calculate(pid_obj_t *pid, float measure, float ref)
     }
     else // 进入死区, 则清空积分和输出
     {
+        pid->Pout = 0;
         pid->Output = 0;
         pid->ITerm = 0;
     }

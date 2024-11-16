@@ -405,6 +405,7 @@ static void remote_to_cmd_pc_DT7(void)
     if (gim_cmd.ctrl_mode==GIMBAL_GYRO)
     {
 
+
         gim_cmd.yaw +=   (float)rc_now->ch3 * RC_RATIO * GIMBAL_RC_MOVE_RATIO_YAW + fx * KB_RATIO * GIMBAL_PC_MOVE_RATIO_YAW;
         gim_cmd.pitch += (float)rc_now->ch4 * RC_RATIO * GIMBAL_RC_MOVE_RATIO_PIT- fy * KB_RATIO * GIMBAL_PC_MOVE_RATIO_PIT;
         gyro_yaw_inherit =gim_cmd.yaw;
