@@ -91,6 +91,8 @@
 #define RT_USING_PIN
 #define RT_USING_PWM
 #define RT_USING_SPI
+#define RT_USING_SENSOR
+#define RT_USING_SENSOR_CMD
 
 /* Using USB */
 
@@ -196,18 +198,16 @@
 
 /* peripheral libraries and drivers */
 
-/* HAL & SDK Drivers */
+/* sensors drivers */
 
-/* STM32 HAL & SDK Drivers */
+#define PKG_USING_INA226
+#define PKG_USING_INA226_EXAMPLE
+#define PKG_USING_INA226_LATEST_VERSION
+
+/* touch drivers */
 
 
 /* Kendryte SDK */
-
-
-/* sensors drivers */
-
-
-/* touch drivers */
 
 
 /* AI packages */
@@ -293,6 +293,11 @@
 
 #define BSP_I2C1_SCL_PIN 8
 #define BSP_I2C1_SDA_PIN 41
+#define BSP_USING_I2C2
+
+/* Notice: PE2 --> 66; PH3 --> 115 */
+#define BSP_I2C2_SCL_PIN GET_PIN(B,13)
+#define BSP_I2C2_SDA_PIN GET_PIN(B,12)
 #define BSP_USING_USBD
 
 /* RoboMaster Modules */

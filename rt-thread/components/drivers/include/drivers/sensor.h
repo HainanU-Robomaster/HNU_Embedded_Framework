@@ -53,6 +53,12 @@ extern "C" {
 #define RT_SENSOR_CLASS_IAQ            (19) /* IAQ sensor.       */
 #define RT_SENSOR_CLASS_ETOH           (20) /* EtOH sensor.      */
 #define RT_SENSOR_CLASS_BP             (21) /* Blood Pressure    */
+#define RT_SENSOR_CLASS_VOLTAGE        (22)
+#define RT_SENSOR_CLASS_VOLTAGE_STR    "Voltage"
+#define RT_SENSOR_CLASS_CURRENT        (23)
+#define RT_SENSOR_CLASS_CURRENT_STR    "Current"
+#define RT_SENSOR_CLASS_POWER        (24)
+#define RT_SENSOR_CLASS_POWER_STR    "POWER"
 
 /* Sensor vendor types */
 
@@ -233,6 +239,9 @@ struct rt_sensor_data
         rt_uint32_t          iaq;           /* IAQ sensor.          unit: 1 */
         rt_uint32_t          etoh;          /* EtOH sensor.         unit: ppm */
         struct sensor_bp     bp;            /* BloodPressure.       unit: mmHg        */
+        float                mv;            /* Voltage sensor.      unit: mv          */
+        float                ma;            /* Current sensor.      unit: ma          */
+        float                mw;            /* Power sensor.        unit: mw          */
     } data;
 };
 
