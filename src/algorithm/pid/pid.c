@@ -210,7 +210,7 @@ float pid_calculate(pid_obj_t *pid, float measure, float ref)
     }
     else // 进入死区, 则清空积分和输出
     {
-        pid->Pout = 0;
+        pid->Pout = 0;    //添加清除pout，为了解决引起底盘震动的follow_pid在err为0时pout却不刷新为0的神奇bug
         pid->Output = 0;
         pid->ITerm = 0;
     }

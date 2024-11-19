@@ -381,7 +381,7 @@ static void chassis_motor_init()
     }
 
     follow_pid = pid_register(&chassis_follow_config);
-    follow_pid->DeadBand = 2;
+    follow_pid->DeadBand = 2;  //增设死区以减弱底盘在禁止状态下会频繁震动的bug
 }
 
 /* --------------------------------- 底盘解算控制 --------------------------------- */
