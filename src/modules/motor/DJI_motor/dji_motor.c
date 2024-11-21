@@ -32,6 +32,8 @@ static rt_device_t chassis_can, gimbal_can;
  *        该变量将在 dji_motor_control() 中使用,分组在 motor_send_grouping()中进行
  *
  * C610(m2006)/C620(m3508):0x1ff,0x200;
+ * GM6020:0x1ff,0x2ff
+ * 反馈(rx_id): GM6020: 0x204+id ; C610/C620: 0x200+id
  * GM6020/GM66623:0x1ff,0x2ff
  * 反馈(rx_id): GM6020: 0x204+id ; C610/C620: 0x200+id;GM6623:0x205+id(yaw id=0x205)
  * can1: [0]:0x1FF,[1]:0x200,[2]:0x2FF
@@ -39,10 +41,10 @@ static rt_device_t chassis_can, gimbal_can;
  */
 static struct rt_can_msg send_msg[6] = {
     [0] = {.id = 0x1ff, .ide  = RT_CAN_STDID, .rtr = RT_CAN_DTR, .len  = 0x08, .data = {0}},
-    [1] = {.id = 0x2ff, .ide  = RT_CAN_STDID, .rtr = RT_CAN_DTR, .len  = 0x08, .data = {0}},
+    [1] = {.id = 0x200, .ide  = RT_CAN_STDID, .rtr = RT_CAN_DTR, .len  = 0x08, .data = {0}},
     [2] = {.id = 0x2ff, .ide  = RT_CAN_STDID, .rtr = RT_CAN_DTR, .len  = 0x08, .data = {0}},
     [3] = {.id = 0x1ff, .ide  = RT_CAN_STDID, .rtr = RT_CAN_DTR, .len  = 0x08, .data = {0}},
-    [4] = {.id = 0x2ff, .ide  = RT_CAN_STDID, .rtr = RT_CAN_DTR, .len  = 0x08, .data = {0}},
+    [4] = {.id = 0x200, .ide  = RT_CAN_STDID, .rtr = RT_CAN_DTR, .len  = 0x08, .data = {0}},
     [5] = {.id = 0x2ff, .ide  = RT_CAN_STDID, .rtr = RT_CAN_DTR, .len  = 0x08, .data = {0}},
 };
 
@@ -281,8 +283,7 @@ void dji_motor_control()
         motor = dji_motor_obj[i];
         measure = motor->measure;
 
-         set = motor->control(measure); // 调用对接的电机控制器计算
-        // set=100;
+        set = motor->control(measure); // 调用对接的电机控制器计算
         // 分组填入发送数据
         group = motor->send_group;
         num = motor->message_num;
@@ -347,17 +348,3 @@ dji_motor_object_t *dji_motor_register(motor_config_t *config, void *control)
     dji_motor_obj[idx++] = object;
     return object;
 }
-float decode_6623_aps(float inputs) {
-     static float num[3];
-     static int index = 0;
-     static float avrg;
-     index%=3;
-         if(abs(inputs-avrg)<50){
-             num[index]=inputs;
-             for(int i=0;i<3;i++){
-                 avrg+=num[i];
-             }
-             avrg/=5;
-         }
-     return num[index++];
- }
