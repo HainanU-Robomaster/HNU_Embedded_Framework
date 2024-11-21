@@ -1,15 +1,22 @@
-# for module compiling
-import os
-Import('RTT_ROOT')
-from building import *
-
+from building import * 
+Import('rtconfig')
+# get current dir path
 cwd = GetCurrentDir()
-objs = []
-list = os.listdir(cwd)
 
-for d in list:
-    path = os.path.join(cwd, d)
-    if os.path.isfile(os.path.join(path, 'SConscript')):
-        objs = objs + SConscript(os.path.join(d, 'SConscript'))
+src = []
 
-Return('objs')
+# add ina226 src files
+src += Glob('ina226.c')
+if GetDepend(['PKG_INA226_USING_SENSOR_V1']):
+    src += ['ti_ina226_sensor_v1.c']
+
+if GetDepend(['PKG_USING_INA226_EXAMPLE']):
+    src += ['example_ina226.c']
+
+# add ina226 inc files
+path  = [cwd]
+# add src and inc to group 
+group = DefineGroup('ina226', src, depend = ['PKG_USING_INA226'], CPPPATH = path)
+
+
+Return('group')
