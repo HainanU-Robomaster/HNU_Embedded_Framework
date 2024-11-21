@@ -1,0 +1,7 @@
+[
+ {
+  "path": "/packages/peripherals/sensors/ina226", 
+  "ver": "latest", 
+  "name": "INA226"
+ }
+]
