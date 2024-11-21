@@ -9,6 +9,7 @@
 
 #define DBG_TAG   "dji.motor"
 #define DBG_LVL DBG_INFO
+#include <drv_dwt.h>
 #include <rtdbg.h>
 
 #define DJI_MOTOR_CNT 14             // 默认波特率下，实测挂载电机极限数量
@@ -31,17 +32,17 @@ static rt_device_t chassis_can, gimbal_can;
  *        该变量将在 dji_motor_control() 中使用,分组在 motor_send_grouping()中进行
  *
  * C610(m2006)/C620(m3508):0x1ff,0x200;
- * GM6020:0x1ff,0x2ff
- * 反馈(rx_id): GM6020: 0x204+id ; C610/C620: 0x200+id
+ * GM6020/GM66623:0x1ff,0x2ff
+ * 反馈(rx_id): GM6020: 0x204+id ; C610/C620: 0x200+id;GM6623:0x205+id(yaw id=0x205)
  * can1: [0]:0x1FF,[1]:0x200,[2]:0x2FF
  * can2: [3]:0x1FF,[4]:0x200,[5]:0x2FF
  */
 static struct rt_can_msg send_msg[6] = {
     [0] = {.id = 0x1ff, .ide  = RT_CAN_STDID, .rtr = RT_CAN_DTR, .len  = 0x08, .data = {0}},
-    [1] = {.id = 0x200, .ide  = RT_CAN_STDID, .rtr = RT_CAN_DTR, .len  = 0x08, .data = {0}},
+    [1] = {.id = 0x2ff, .ide  = RT_CAN_STDID, .rtr = RT_CAN_DTR, .len  = 0x08, .data = {0}},
     [2] = {.id = 0x2ff, .ide  = RT_CAN_STDID, .rtr = RT_CAN_DTR, .len  = 0x08, .data = {0}},
     [3] = {.id = 0x1ff, .ide  = RT_CAN_STDID, .rtr = RT_CAN_DTR, .len  = 0x08, .data = {0}},
-    [4] = {.id = 0x200, .ide  = RT_CAN_STDID, .rtr = RT_CAN_DTR, .len  = 0x08, .data = {0}},
+    [4] = {.id = 0x2ff, .ide  = RT_CAN_STDID, .rtr = RT_CAN_DTR, .len  = 0x08, .data = {0}},
     [5] = {.id = 0x2ff, .ide  = RT_CAN_STDID, .rtr = RT_CAN_DTR, .len  = 0x08, .data = {0}},
 };
 
@@ -124,6 +125,31 @@ static uint8_t sender_enable_flag[6] = {0};
              }
          }
          break;
+     case GM6623:
+        motor_id = motor->rx_id - 0x205;//yawID started with 0
+         if(motor_id <= 3)
+         {
+             motor_send_num = motor_id;
+             motor_group = rt_strcmp(config->can_name,can_chassis) ? 3 : 0;
+         }else {
+             motor_send_num = motor_id - 4;
+             motor_group = rt_strcmp(config ->can_name,can_chassis) ? 5 : 2;
+         }
+
+         sender_enable_flag[motor_group] = 1;
+         motor->message_num = motor_send_num;
+         motor->send_group = motor_group;
+
+         for (size_t i = 0; i < idx; ++i)
+         {
+             if (!rt_strcmp(dji_motor_obj[i]->can_dev->parent.name, config->can_name) && dji_motor_obj[i]->rx_id == config->rx_id)
+             {
+                 LOG_E("ID crash. Check in debug mode, add dji_motor_obj to watch to get more information.");
+                 while (1)
+                     LOG_E("id [%d], can_bus [%s]", config->rx_id, config->can_name);
+             }
+         }
+         break;
 
      default: // other motors should not be registered here
          while (1)
@@ -138,28 +164,67 @@ static uint8_t sender_enable_flag[6] = {0};
  */
 static void decode_dji_motor(dji_motor_object_t *motor, uint8_t *data)
 {
-    uint8_t *rxbuff = data;
-    dji_motor_measure_t *measure = &motor->measure; // measure要多次使用,保存指针减小访存开销
+     uint8_t *rxbuff = data;
+     dji_motor_measure_t *measure = &motor->measure; // measure要多次使用,保存指针减小访存开销
+    switch(motor->motor_type) {
+        case M2006:
+        case M3508:
+        case GM6020:
+             rt_timer_start(motor->timer);  // 判定电机未离线，重置电机定时器
+             // 解析数据并对电流和速度进行滤波,电机的反馈报文具体格式见电机说明手册
+             measure->last_ecd = measure->ecd;
+             measure->ecd = ((uint16_t)rxbuff[0]) << 8 | rxbuff[1];
+             measure->angle_single_round = ECD_ANGLE_COEF_DJI * (float)measure->ecd;
+             measure->speed_rpm = (1.0f - SPEED_SMOOTH_COEF) * measure->speed_rpm + SPEED_SMOOTH_COEF * (float)((int16_t)(rxbuff[2] << 8 | rxbuff[3]));
+             measure->speed_aps = (1.0f - SPEED_SMOOTH_COEF) * measure->speed_aps +
+                                  RPM_2_ANGLE_PER_SEC * SPEED_SMOOTH_COEF * (float)((int16_t)(rxbuff[2] << 8 | rxbuff[3]));
+             measure->real_current = (1.0f - CURRENT_SMOOTH_COEF) * measure->real_current +
+                                     CURRENT_SMOOTH_COEF * (float)((int16_t)(rxbuff[4] << 8 | rxbuff[5]));
+             measure->temperature = rxbuff[6];
 
-    rt_timer_start(motor->timer);  // 判定电机未离线，重置电机定时器
+             // 多圈角度计算,前提是假设两次采样间电机转过的角度小于180°,自己画个图就清楚计算过程了
+             if (measure->ecd - measure->last_ecd > 4096)
+                 measure->total_round--;
+             else if (measure->ecd - measure->last_ecd < -4096)
+                 measure->total_round++;
+             measure->total_angle = measure->total_round * 360 + measure->angle_single_round;
+             break;
 
-    // 解析数据并对电流和速度进行滤波,电机的反馈报文具体格式见电机说明手册
-    measure->last_ecd = measure->ecd;
-    measure->ecd = ((uint16_t)rxbuff[0]) << 8 | rxbuff[1];
-    measure->angle_single_round = ECD_ANGLE_COEF_DJI * (float)measure->ecd;
-    measure->speed_rpm = (1.0f - SPEED_SMOOTH_COEF) * measure->speed_rpm + SPEED_SMOOTH_COEF * (float)((int16_t)(rxbuff[2] << 8 | rxbuff[3]));
-    measure->speed_aps = (1.0f - SPEED_SMOOTH_COEF) * measure->speed_aps +
-                         RPM_2_ANGLE_PER_SEC * SPEED_SMOOTH_COEF * (float)((int16_t)(rxbuff[2] << 8 | rxbuff[3]));
-    measure->real_current = (1.0f - CURRENT_SMOOTH_COEF) * measure->real_current +
-                            CURRENT_SMOOTH_COEF * (float)((int16_t)(rxbuff[4] << 8 | rxbuff[5]));
-    measure->temperature = rxbuff[6];
+         case GM6623:
+             rt_timer_start(motor->timer);
+            static float current_time;
+            static float last_time;
+            static int16_t delta_ecd;
+            float delta_time;
+            last_time = current_time;
+            current_time = dwt_get_time_ms();
 
-    // 多圈角度计算,前提是假设两次采样间电机转过的角度小于180°,自己画个图就清楚计算过程了
-    if (measure->ecd - measure->last_ecd > 4096)
-        measure->total_round--;
-    else if (measure->ecd - measure->last_ecd < -4096)
-        measure->total_round++;
-    measure->total_angle = measure->total_round * 360 + measure->angle_single_round;
+            measure->last_ecd = measure->ecd;
+            measure->ecd = ((uint16_t)rxbuff[0]) << 8 | rxbuff[1];//机械角度
+            delta_ecd = measure->ecd - measure->last_ecd;
+            if (delta_ecd < -4096) { // 正向跨越
+                delta_ecd += 8192;
+                measure->total_round++;
+            } else if (delta_ecd > 4096) { // 反向跨越
+                delta_ecd -= 8192;
+                measure->total_round--;
+            }
+            measure->angle_single_round = ECD_ANGLE_COEF_DJI * (float)measure->ecd;//当前角度
+            measure->real_current = (1.0f - CURRENT_SMOOTH_COEF) * measure->real_current +
+                                     CURRENT_SMOOTH_COEF * (float)((int16_t)(rxbuff[2] << 8 | rxbuff[3]));
+            //6623没有测量角速度，只能通过编码器值计算一个
+            delta_time = (current_time-last_time)*0.001f;//ms->s
+            if(delta_time > 0) {
+                if(delta_ecd <= 3) {
+                    measure->speed_aps = 0;
+                }else {
+                    measure->speed_aps = (1.0f - SPEED_SMOOTH_COEF) * measure->speed_aps + SPEED_SMOOTH_COEF *delta_ecd * ECD_ANGLE_COEF_DJI / delta_time;
+                }
+                measure->speed_rpm = (1.0f - SPEED_SMOOTH_COEF) * measure->speed_rpm + SPEED_SMOOTH_COEF * (int16_t) (measure->speed_aps )/RPM_2_ANGLE_PER_SEC;//圈/分
+            }
+            measure->total_angle = measure->total_round * 360 + measure->angle_single_round;
+            break;
+     }
 }
 
 /**
@@ -216,8 +281,8 @@ void dji_motor_control()
         motor = dji_motor_obj[i];
         measure = motor->measure;
 
-        set = motor->control(measure); // 调用对接的电机控制器计算
-
+         set = motor->control(measure); // 调用对接的电机控制器计算
+        // set=100;
         // 分组填入发送数据
         group = motor->send_group;
         num = motor->message_num;
@@ -259,7 +324,7 @@ dji_motor_object_t *dji_motor_register(motor_config_t *config, void *control)
     rt_memset(object, 0, sizeof(dji_motor_object_t));
 
     // 对接用户配置的 motor_config
-    object->motor_type = config->motor_type;                         // 6020 or 2006 or 3508
+    object->motor_type = config->motor_type;                         // 6020 or 2006 or 3508 or 6623
     object->rx_id = config->rx_id;                                   // 电机接收报文的ID
     object->control = control;                                       // 电机控制器执行
 
@@ -282,3 +347,17 @@ dji_motor_object_t *dji_motor_register(motor_config_t *config, void *control)
     dji_motor_obj[idx++] = object;
     return object;
 }
+float decode_6623_aps(float inputs) {
+     static float num[3];
+     static int index = 0;
+     static float avrg;
+     index%=3;
+         if(abs(inputs-avrg)<50){
+             num[index]=inputs;
+             for(int i=0;i<3;i++){
+                 avrg+=num[i];
+             }
+             avrg/=5;
+         }
+     return num[index++];
+ }
