@@ -127,16 +127,16 @@
 #define CHASSIS_MAX_V_FOLLOW            1500
 
 /* ---------------------------------- 云台相关 ---------------------------------- */
-#define YAW_MOTOR_ID     0x207
-#define PITCH_MOTOR_ID   0x208
+#define YAW_MOTOR_ID     0x20B
+#define PITCH_MOTOR_ID   0x207
 
-#define CENTER_ECD_YAW   6112         //云台yaw轴编码器归中值
+#define CENTER_ECD_YAW   7539         //云台yaw轴编码器归中值
 #define CENTER_ECD_PITCH 6115         //云台pitch轴编码器归中值
 
 /* pitch轴最大仰角 */
-#define PIT_ANGLE_MAX        31.0f
+#define PIT_ANGLE_MAX        14.0f
 /* pitch轴最大俯角 */
-#define PIT_ANGLE_MIN        -15.0f
+#define PIT_ANGLE_MIN        -20.0f
 
 /* 云台控制周期 (ms) */
 #define GIMBAL_PERIOD 1
