@@ -58,7 +58,7 @@ int  ina226_get_bus_voltage(float *volts)
   ina226_device.i2c_read(INA226_REG_BUSVOLTS, (uint16_t *)&val, 2U);
   val = __LEu16(&val);
   // 理论值是1.25 但是需要结合实际情况来调节
-  *volts = val * 1.176 ; // 1.25mV per LSB 
+  *volts = 1.258713457*(val-35.92286996); // 1.25mV per LSB
   return INA226_STATUS_OK;
 }
 
@@ -79,7 +79,7 @@ int  ina226_get_current(float *ampere)
   ina226_device.i2c_read(INA226_REG_CURRENT, (uint16_t *)&val, 2U);
   val = __LEu16(&val);
   // 理论值是*1.00 但是需要结合实际情况来校准
-  *ampere = val * INA226_CURRENT_LSB * 1.1705;
+  *ampere = val * INA226_CURRENT_LSB*0.990609556+80.79925373;
   return INA226_STATUS_OK;
 }
 
@@ -94,7 +94,7 @@ int  ina226_get_current1(float *ampere)
     return INA226_STATUS_ERROR;
   }
   // 理论值是*1.00 但是需要结合实际情况来校准
-  *ampere = (shunt_volts  / ina226_device.shunt_resistance ) * 1.1705  ;
+  *ampere = (shunt_volts  / ina226_device.shunt_resistance )   ;
   return INA226_STATUS_OK;
 }
 

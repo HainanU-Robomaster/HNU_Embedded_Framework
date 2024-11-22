@@ -14,7 +14,7 @@
 #include "stdio.h"
 #include "ina226.h"
 
-#define ina226_i2c i2c2
+
 
 /****************************
  *         A0   A1  addr
@@ -25,7 +25,7 @@
  *************************/
 #define INA226_ADDR (0x40)
 power_monitor_data_t power_monitor_data;
-float volts,volts1,volts2;
+float volts,volts1,current;
 static void ina226_thread_entry(void *parameter)
 {
     rt_device_t dev = RT_NULL;
@@ -34,7 +34,7 @@ static void ina226_thread_entry(void *parameter)
 
 
     rt_size_t res;
-    dev = rt_device_find("ina226_i2c");
+    dev = rt_device_find("i2c2");
     if (dev == RT_NULL)
     {
         rt_kprintf("can not find device : ina226 \n");
@@ -64,17 +64,17 @@ static void ina226_thread_entry(void *parameter)
             // ina226_get_power(&(hData->mw));
             hData->mw = hData->mv * hData->ma / 1e3;
             res = RT_EOK;
-            ina226_get_bus_voltage(&volts);
-            ina226_get_shunt_voltage(&volts1);
-            ina226_get_current1(&volts2);
+         //   ina226_get_bus_voltage(&volts);
+           // ina226_get_shunt_voltage(&volts1);
+            ina226_get_current1(&current);
 
-            power_monitor_data.mv/=1000.0;
+
 //            sprintf(ma,"%f", power_monitor_data.ma);
 //            sprintf(mv,"%f", power_monitor_data.mv);
 //            sprintf(mw,"%f", power_monitor_data.mw);
             rt_kprintf("current : %s mA,voltage : %s V ,power : %s mW\n", ma, mv, mw);
         }
-        rt_thread_mdelay(500);
+        rt_thread_mdelay(1);
     }
 }
 
@@ -99,19 +99,16 @@ static int ina226_example(void)
     return RT_EOK;
 }
 
-//INIT_APP_EXPORT(ina226_example);
+INIT_APP_EXPORT(ina226_example);
 
 static int rt_hw_ina226_port(void)
 {
     struct rt_sensor_config cfg;
     cfg.intf.user_data = (void *)INA226_ADDR;
-    cfg.intf.dev_name = "ina226_i2c";
+    cfg.intf.dev_name = "i2c2";
     cfg.mode = RT_SENSOR_MODE_POLLING  ;
     rt_hw_ina226_init("ina226", &cfg);
     return RT_EOK;
-    return 0;
 }
 
-
-
-//INIT_COMPONENT_EXPORT(rt_hw_ina226_port);
+INIT_COMPONENT_EXPORT(rt_hw_ina226_port);

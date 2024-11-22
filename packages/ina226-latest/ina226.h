@@ -46,7 +46,7 @@ extern "C"
 #define  INA226_CONF_MODE_CONT_SHUNT_BUS      (7)
 
 #define  INA226_DEFAULT_SHUNT_OHMS            (0.01)  // Ohms
-#define  INA226_CURRENT_LSB                   (0.02) // mA
+#define  INA226_CURRENT_LSB                   (0.05) // mA
 
 #define INA226_STATUS_OK (0U)
 #define INA226_STATUS_ERROR (-1U)
