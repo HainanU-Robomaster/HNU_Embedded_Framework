@@ -148,7 +148,7 @@
 #define YAW_INTEGRAL_V_IMU       0
 #define YAW_MAX_V_IMU            30000
 /* imu角度环 */
-#define YAW_KP_A_IMU             0.15f
+#define YAW_KP_A_IMU             0.15f   //降低响应速度减小超调以提升稳定性
 #define YAW_KI_A_IMU             0
 #define YAW_KD_A_IMU             0.001f
 #define YAW_INTEGRAL_A_IMU       0

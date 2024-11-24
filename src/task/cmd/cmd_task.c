@@ -585,6 +585,7 @@ static void remote_to_cmd_pc_DT7(void)
         gim_cmd.ctrl_mode = GIMBAL_RELAX;
         chassis_cmd.ctrl_mode = CHASSIS_RELAX;
         shoot_cmd.ctrl_mode=SHOOT_STOP;
+        shoot_cmd.friction_status = 0; //在失能状态下，摩擦轮也不能开启，从而也进一步保证拨弹盘不能被开启
         /*放开状态下，gim不接收值*/
         gim_cmd.pitch=0;
         gim_cmd.yaw=0;
