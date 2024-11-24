@@ -57,6 +57,8 @@ struct ins_msg
     float pitch;
     float yaw;
     float yaw_total_angle;
+    int BorR;
+    int Fire;
 };
 
 /* ----------------CMD应用发布的控制数据,应当由gimbal/chassis/shoot订阅---------------- */
@@ -80,6 +82,7 @@ struct gimbal_cmd_msg
 { // 云台期望角度控制
     float yaw;
     float pitch;
+    float roll;
     gimbal_mode_e ctrl_mode;  // 当前云台控制模式
     gimbal_mode_e last_mode;  // 上一次云台控制模式
 };
@@ -109,7 +112,8 @@ struct gimbal_fdb_msg
 
     float yaw_offset_angle_total;    //云台初始 yaw 轴角度 （由imu得）
     float yaw_offset_angle;    //云台初始 yaw 轴角度 （由imu得）
-    float pit_offset_angle;    //云台初始 pit 轴角度 （由imu得）
+    float pit_offset_angle;//云台初始 pit 轴角度 （由imu得）
+    float roll_offset_angle;//云台初始 roll 轴角度 （由imu得）
     float yaw_relative_angle;  //云台相对于初始位置的yaw轴角度
 };
 
@@ -141,6 +145,7 @@ struct shoot_fdb_msg
  { // 云台自瞄角度控制
      float yaw;
      float pitch;
+     float roll;
      rt_uint8_t heartbeat;
  };
 

@@ -134,7 +134,7 @@ void transmission_task_entry(void* argument)
 void Send_to_pc(RpyTypeDef data_r)
 {
     /*填充数据*/
-    pack_Rpy(&data_r, -(gim_fdb.yaw_offset_angle - ins_data.yaw), gim_fdb.pit_offset_angle-ins_data.pitch, ins_data.roll);
+    pack_Rpy(&data_r, -(gim_fdb.yaw_offset_angle - ins_data.yaw), gim_fdb.pit_offset_angle-ins_data.pitch, ins_data.roll,ins_data.BorR,ins_data.Fire);
     Check_Rpy(&data_r);
 
     rt_device_write(vs_port, 0, (uint8_t*)&data_r, sizeof(data_r));
@@ -144,7 +144,7 @@ void Send_to_pc(RpyTypeDef data_r)
     }
 }
 
-void pack_Rpy(RpyTypeDef *frame, float yaw, float pitch,float roll)
+void pack_Rpy(RpyTypeDef *frame, float yaw, float pitch,float roll,int BorR,int Fire)
 {
     int8_t rpy_tx_buffer[FRAME_RPY_LEN] = {0} ;
     int32_t rpy_data = 0;
@@ -166,10 +166,21 @@ void pack_Rpy(RpyTypeDef *frame, float yaw, float pitch,float roll)
     rpy_tx_buffer[10] = *gimbal_rpy >> 8;
     rpy_tx_buffer[11] = *gimbal_rpy >> 16;
     rpy_tx_buffer[12] = *gimbal_rpy >> 24;
+    rpy_data = BorR *1000;
+    rpy_tx_buffer[9] = *gimbal_rpy;
+    rpy_tx_buffer[10] = *gimbal_rpy >> 8;
+    rpy_tx_buffer[11] = *gimbal_rpy >> 16;
+    rpy_tx_buffer[12] = *gimbal_rpy >> 24;
 
+    rpy_data = Fire *1000;
+    rpy_tx_buffer[9] = *gimbal_rpy;
+    rpy_tx_buffer[10] = *gimbal_rpy >> 8;
+    rpy_tx_buffer[11] = *gimbal_rpy >> 16;
+    rpy_tx_buffer[12] = *gimbal_rpy >> 24;
     memcpy(&frame->DATA[0], rpy_tx_buffer,13);
 
     frame->LEN = FRAME_RPY_LEN;
+
 }
 
 void Check_Rpy(RpyTypeDef *frame)
@@ -215,10 +226,12 @@ static rt_err_t usb_input(rt_device_t dev, rt_size_t size)
                 if (rpy_rx_data.DATA[0]) {//相对角度控制
                     trans_fdb.yaw =  (*(int32_t *) &rpy_rx_data.DATA[1] / 1000.0);
                     trans_fdb.pitch =-(*(int32_t *) &rpy_rx_data.DATA[5] / 1000.0);
+                    trans_fdb.roll =-(*(int32_t *) &rpy_rx_data.DATA[9] / 1000.0);
                 }
                 else{//绝对角度控制
                     trans_fdb.yaw =  (*(int32_t *) &rpy_rx_data.DATA[1] / 1000.0);
                     trans_fdb.pitch = -(*(int32_t *) &rpy_rx_data.DATA[5] / 1000.0);
+                    trans_fdb.roll =-(*(int32_t *) &rpy_rx_data.DATA[9] / 1000.0);
                 }
             }break;
             case HEARTBEAT:{

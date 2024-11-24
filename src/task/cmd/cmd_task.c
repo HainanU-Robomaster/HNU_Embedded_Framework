@@ -35,6 +35,8 @@ static void cmd_sub_pull(void);
 
 /*发射停止标志位*/
 static int trigger_flag=0;
+/*到达一定角度射击标志位*/
+static float expectroll=1;
 /*自瞄鼠标累计操作值*/
 static float mouse_accumulate_x=0;
 static float mouse_accumulate_y=0;
@@ -505,124 +507,115 @@ static void remote_to_cmd_pc_DT7(void)
     {
         chassis_cmd.vw=ROTATE_INTERCEPT+ROTATE_MULTIPLIER*referee_fdb.robot_status.chassis_power_limit/ROTATE_LIMIT_RATIO;/*!小陀螺转速，随着功率限制提升加快转速*/
     }
-    /*TODO:--------------------------------------------------发射模块状态机--------------------------------------------------------------*/
-    /*!-----------------------------------------开关摩擦轮--------------------------------------------*/
+    /*-------------------------------------------------裁判系统红蓝判断--------------------------------------------------------------*/
+    if(referee_fdb.robot_status.robot_id==7)
+    {
+        ins_data.BorR=0;//红哨兵是0
+    }
+    if(referee_fdb.robot_status.robot_id==107) {
+        ins_data.BorR = 1;//蓝哨兵是1
+    }
+        /*TODO:--------------------------------------------------发射模块状态机--------------------------------------------------------------*/
+        /*!-----------------------------------------开关摩擦轮--------------------------------------------*/
+        if (trans_fdb.roll == expectroll) {
+            ins_data.Fire = 1;
+        }
+        if (ins_data.Fire) {
+            shoot_cmd.friction_status = 1;
+        }
+        if (km.f_sta == KEY_PRESS_ONCE) {
+            key_f_status = -key_f_status;
+        }
+        if (key_f_status == 1 || rc_now->sw1 == RC_MI) {
+            shoot_cmd.friction_status = 1;
+        } else {
+            shoot_cmd.friction_status = 0;
+        }
+        /*!------------------------------------------------------------扳机连发模式---------------------------------------------------------*/
 
-    if(km.f_sta==KEY_PRESS_ONCE)
-    {
-        key_f_status=-key_f_status;
-    }
-    if ( key_f_status==1||rc_now->sw1==RC_MI)
-    {
-        shoot_cmd.friction_status=1;
-    }
-    else
-    {
-        shoot_cmd.friction_status=0;
-    }
-    /*!------------------------------------------------------------扳机连发模式---------------------------------------------------------*/
-    if (km.v_sta==KEY_PRESS_ONCE)
-    {
-        key_v_status=-key_v_status;
-    }
-    if (key_v_status==-1)
-    {
-        shoot_cmd.ctrl_mode=SHOOT_COUNTINUE;
-    }
-    else
-    {
-        shoot_cmd.ctrl_mode=SHOOT_ONE;
-    }
-    switch (shoot_cmd.ctrl_mode)
-    {
-        case SHOOT_ONE:
-            if (rc_now->mouse.l==1&&shoot_cmd.friction_status==1)
-            {
-                if (shoot_fdb.trigger_status==SHOOT_WAITING&&trigger_flag==0)
-                {
-                    shoot_cmd.trigger_status=TRIGGER_ON;
-                    trigger_flag=1;
+        if (km.v_sta == KEY_PRESS_ONCE) {
+            key_v_status = -key_v_status;
+        }
+        if (key_v_status == -1) {
+            shoot_cmd.ctrl_mode = SHOOT_COUNTINUE;
+        } else {
+            shoot_cmd.ctrl_mode = SHOOT_ONE;
+        }
+        switch (shoot_cmd.ctrl_mode) {
+            case SHOOT_ONE:
+                if (rc_now->mouse.l == 1 && shoot_cmd.friction_status == 1) {
+                    if (shoot_fdb.trigger_status == SHOOT_WAITING && trigger_flag == 0) {
+                        shoot_cmd.trigger_status = TRIGGER_ON;
+                        trigger_flag = 1;
+                    } else if (shoot_fdb.trigger_status == SHOOT_OK) {
+                        shoot_cmd.trigger_status = TRIGGER_ING;
+                    }
+
+                } else {
+                    shoot_cmd.trigger_status = TRIGGER_OFF;
                 }
-                else if(shoot_fdb.trigger_status==SHOOT_OK)
-                {
-                    shoot_cmd.trigger_status=TRIGGER_ING;
+                if (rc_now->mouse.l == 0) {
+                    trigger_flag = 0;
                 }
 
-            }
+                break;
+
+            case SHOOT_COUNTINUE:
+                if ((rc_now->mouse.l == 1 || rc_now->wheel >= 200) && shoot_cmd.friction_status == 1
+                    // &&(referee_fdb.power_heat_data.shooter_id1_17mm_cooling_heat < (referee_fdb.robot_status.shooter_barrel_heat_limit-10))
+                        ) {
+                    shoot_cmd.shoot_freq = DBUS_FRICTION_AUTO_SPEED_H;
+                    /*!扳机连发功率限制如果未挂载功率限制，发射频率置为一个合适速度*/
+                    if (((int16_t) referee_fdb.robot_status.shooter_barrel_heat_limit -
+                         (int16_t) referee_fdb.power_heat_data.shooter_id1_17mm_cooling_heat) <= 30) {
+                        shoot_cmd.shoot_freq = 0;
+                    }
+                    if (referee_fdb.robot_status.shooter_barrel_heat_limit == 0) {
+                        shoot_cmd.shoot_freq = DBUS_FRICTION_AUTO_SPEED_L;
+                    }
+                } else {
+                    shoot_cmd.shoot_freq = 0;
+                }
+                break;
+
+        }
+        /*-------------------------------------------------------------堵弹反转检测------------------------------------------------------------*/
+        if (shoot_fdb.trigger_motor_current >= 9500 || reverse_cnt != 0)/*M2006电机的堵转电流是10000*/
+        {
+            shoot_cmd.ctrl_mode = SHOOT_REVERSE;
+            if (reverse_cnt < 120)
+                reverse_cnt++;
             else
-            {
-                shoot_cmd.trigger_status=TRIGGER_OFF;
-            }
-            if (rc_now->mouse.l==0)
-            {
-                trigger_flag=0;
-            }
-
-            break;
-
-        case SHOOT_COUNTINUE:
-            if((rc_now->mouse.l==1||rc_now->wheel>=200)&&shoot_cmd.friction_status==1&&(referee_fdb.power_heat_data.shooter_id1_17mm_cooling_heat < (referee_fdb.robot_status.shooter_barrel_heat_limit-10)))
-            {
-                shoot_cmd.shoot_freq= DBUS_FRICTION_AUTO_SPEED_H;
-                /*!扳机连发功率限制如果未挂载功率限制，发射频率置为一个合适速度*/
-                if(((int16_t)referee_fdb.robot_status.shooter_barrel_heat_limit-(int16_t)referee_fdb.power_heat_data.shooter_id1_17mm_cooling_heat)<=30)
-                {
-                    shoot_cmd.shoot_freq=0;
-                }
-                if(referee_fdb.robot_status.shooter_barrel_heat_limit==0)
-                {
-                    shoot_cmd.shoot_freq= DBUS_FRICTION_AUTO_SPEED_L;
-                }
-            }
-            else
-            {
-                shoot_cmd.shoot_freq=0;
-            }
-            break;
-
-    }
-    /*-------------------------------------------------------------堵弹反转检测------------------------------------------------------------*/
-    if (shoot_fdb.trigger_motor_current>=9500||reverse_cnt!=0)/*M2006电机的堵转电流是10000*/
-    {
-        shoot_cmd.ctrl_mode=SHOOT_REVERSE;
-        if (reverse_cnt<120)
-            reverse_cnt++;
-        else
-            reverse_cnt=0;
-    }
-    /*-----------------------------------------------------------舵机开盖关盖--------------------------------------------------------------*/
-    if(rc_now->kb.bit.R==1||rc_now->wheel<=-200)
-    {
-        shoot_cmd.cover_open=1;
-    }
-    else
-    {
-        shoot_cmd.cover_open=0;
-    }
+                reverse_cnt = 0;
+        }
+        /*-----------------------------------------------------------舵机开盖关盖--------------------------------------------------------------*/
+        if (rc_now->kb.bit.R == 1 || rc_now->wheel <= -200) {
+            shoot_cmd.cover_open = 1;
+        } else {
+            shoot_cmd.cover_open = 0;
+        }
 
 
-    /*--------------------------------------------------手动模式下清空自瞄传过来的角度buffer------------------------------------------------------*/
-    if (gim_cmd.ctrl_mode==GIMBAL_GYRO)
-    {
-        memset(r_buffer_point,0,sizeof (*r_buffer_point));
-    }
-    /*----------------------------------------------------------------使能判断---------------------------------------------------------------*/
-    //TODO:使能判断放最后，防止抽风
-    if (rc_now->sw2==RC_UP)
-    {
-        gim_cmd.ctrl_mode = GIMBAL_RELAX;
-        chassis_cmd.ctrl_mode = CHASSIS_RELAX;
-        shoot_cmd.ctrl_mode=SHOOT_STOP;
-        /*放开状态下，gim不接收值*/
-        gim_cmd.pitch=0;
-        gim_cmd.yaw=0;
-        gyro_yaw_inherit=0;
-        gyro_pitch_inherit=0;
-        /*案件状态标志位重置*/
-         key_e_status=-1;
-         key_f_status=-1;
-        memset(r_buffer_point,0,sizeof (*r_buffer_point));
-    }
+        /*--------------------------------------------------手动模式下清空自瞄传过来的角度buffer------------------------------------------------------*/
+        if (gim_cmd.ctrl_mode == GIMBAL_GYRO) {
+            memset(r_buffer_point, 0, sizeof(*r_buffer_point));
+        }
+        /*----------------------------------------------------------------使能判断---------------------------------------------------------------*/
+        //TODO:使能判断放最后，防止抽风
+        if (rc_now->sw2 == RC_UP) {
+            gim_cmd.ctrl_mode = GIMBAL_RELAX;
+            chassis_cmd.ctrl_mode = CHASSIS_RELAX;
+            shoot_cmd.ctrl_mode = SHOOT_STOP;
+            /*放开状态下，gim不接收值*/
+            gim_cmd.pitch = 0;
+            gim_cmd.yaw = 0;
+            gyro_yaw_inherit = 0;
+            gyro_pitch_inherit = 0;
+            /*案件状态标志位重置*/
+            key_e_status = -1;
+            key_f_status = -1;
+            memset(r_buffer_point, 0, sizeof(*r_buffer_point));
+        }
 
 }
 #endif
