@@ -175,7 +175,7 @@ float pid_calculate(pid_obj_t *pid, float measure, float ref)
     pid->Err = pid->Ref - pid->Measure;
 
     // 如果在死区外,则计算PID
-    if (usr_abs(pid->Err) > pid->DeadBand)
+    if (usr_abs(pid->Err) >= pid->DeadBand)
     {
         // 基本的pid计算,使用位置式
         pid->Pout = pid->Kp * pid->Err;
@@ -210,7 +210,9 @@ float pid_calculate(pid_obj_t *pid, float measure, float ref)
     }
     else // 进入死区, 则清空积分和输出
     {
-        pid->Pout = 0;    //添加清除pout，为了解决引起底盘震动的follow_pid在err为0时pout却不刷新为0的神奇bug
+        pid->Pout = 0;
+        pid->Iout = 0;
+        pid->Dout = 0;
         pid->Output = 0;
         pid->ITerm = 0;
     }

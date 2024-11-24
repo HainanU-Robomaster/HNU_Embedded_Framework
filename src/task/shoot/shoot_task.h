@@ -64,6 +64,13 @@ typedef enum
     SHOOT_ANGLE_CONTINUE=0,   //角度为连发状态
     SHOOT_ANGLE_SINGLE=1,  //角度为单发状态
 } shoot_angle_inherit_e;
+
+typedef enum {
+    REGULAR=0,
+    RISK=1,
+    STOP=2
+    //还可添加临界状态表示
+}risk_level_e;
 #endif //RTTHREAD_SHOOT_TASK_H
 
 

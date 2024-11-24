@@ -45,6 +45,11 @@ static int total_angle_flag=SHOOT_ANGLE_CONTINUE;
 #define MIDDLE_FRICTION 2
 #define TRIGGER_MOTOR 3
 
+//枪口热量相关参数
+#define HEATADD 100  //英雄一发子弹热量为100
+#define MAXHEAT 400
+#define COOL 40
+
 /*pid环数结构体*/
 static struct shoot_controller_t{
     pid_obj_t *pid_speed;
@@ -89,7 +94,23 @@ static rt_int16_t motor_control_right(dji_motor_measure_t measure);
 static rt_int16_t motor_control_middle(dji_motor_measure_t measure);
 static rt_int16_t motor_control_left(dji_motor_measure_t measure);
 static rt_int16_t motor_control_trigger(dji_motor_measure_t measure);
+static void shoot_self_cmd(void);
+static void shoot_self_cmd_Init(void);
+static void self_shoot_msg_restrict(void);
 
+static char referee_status=1;
+typedef struct {
+    rt_bool_t referee_flag;
+    uint8_t bullet_cnt;//转45度发射一颗子弹
+    uint8_t bullet_heat;
+    uint8_t last_angle;
+    uint8_t now_angle;
+    float last_dt;//通过get delta ms计算频率？
+    float now_dt;
+    risk_level_e risk_level;//0:正常,1:危险，2：停止射击
+    int8_t remain_bullet;//还能打多少颗子弹，应该存在负数情况，所以用int定义
+}self_shoot_info_e;
+static self_shoot_info_e self_shoot_info;
 /* --------------------------------- 射击线程入口 --------------------------------- */
 static float sht_dt;
 
@@ -424,6 +445,66 @@ static rt_int16_t motor_control_trigger(dji_motor_measure_t measure)
         send_data = (int16_t) pid_calculate(pid_speed, get_speed, shoot_motor_ref[TRIGGER_MOTOR] );
     }
     return send_data;
+}
+
+//枪口热量限制
+static void shoot_self_cmd_Init(void) {
+
+    self_shoot_info.last_angle= sht_motor[TRIGGER_MOTOR]->measure.total_angle;
+    self_shoot_info.remain_bullet = MAXHEAT / HEATADD;
+    self_shoot_info.last_dt=dwt_get_time_ms();
+}
+static void shoot_self_cmd(void) {
+    uint8_t shoot_cnt = 0;//发射子弹数
+    static float delta_dt=0;
+
+    self_shoot_info.now_angle = sht_motor[TRIGGER_MOTOR]->measure.total_angle;
+    shoot_cnt = (self_shoot_info.now_angle-self_shoot_info.last_angle)/TRIGGER_MOTOR_51_TO_ANGLE;
+    self_shoot_info.bullet_cnt += shoot_cnt; //每转45°(英雄为51.43°)就是发射了一颗子弹
+    self_shoot_info.bullet_heat += shoot_cnt * HEATADD;
+    //枪口热量按 10Hz 的频率结算冷却，每个检测周期热量冷却值 = 每秒冷却值 / 10
+    self_shoot_info.now_dt=dwt_get_time_ms();
+    delta_dt=(self_shoot_info.now_dt-self_shoot_info.last_dt)/1000.0;//裁判系统是10Hz->每隔100ms结算一次，这里把COOL从ms转化成s
+    self_shoot_info.bullet_heat -= COOL * delta_dt;//delta_dt精准到1ms，控制更实时；COOL是1s的冷却值
+
+    if(self_shoot_info.bullet_heat <0)self_shoot_info.bullet_heat = 0;
+    //计算剩余热量还能打多少子弹
+    self_shoot_info.remain_bullet = (MAXHEAT - self_shoot_info.bullet_heat) / HEATADD;//一颗子弹的热量是HEATADD
+/*裁判系统出现断连之后进入状态判断*/
+    self_shoot_info.risk_level = REGULAR;//默认为REGULAR，这样能与裁判系统的热量管理兼容
+
+    if(!self_shoot_info.referee_flag) {//裁判系统意外断连才接入cmd msg的修改
+        if(self_shoot_info.remain_bullet <= 3) {
+            /*裁判系统到机器人有100ms延迟，如果freq>10,一秒发射10发以上会出现裁判系统来不及反馈，但其实已经过热的情况，
+             *临界状态应该降低freq，但在前文中freq>10的情况下trig ref已经设置为0了,所以暂时不管临界状态？*/
+            if(shoot_cmd.ctrl_mode == SHOOT_COUNTINUE) { //处于三连发射击模式时击发一次之后停火，也可以改成单发模式/或不击发/
+                 self_shoot_info.risk_level = RISK;
+                // shoot_cmd.ctrl_mode= SHOOT_ONE;
+                // shoot_cmd.trigger_status=TRIGGER_OFF;
+            }
+            if(self_shoot_info.remain_bullet <= 0) {
+                self_shoot_info.risk_level = STOP;
+                // shoot_cmd.shoot_freq=0;
+            }
+        }
+
+    }
+    self_shoot_info.last_angle=self_shoot_info.now_angle;
+    self_shoot_info.last_dt=self_shoot_info.now_dt;
+}
+static void self_shoot_msg_restrict(void) {
+    if(self_shoot_info.referee_flag== referee_status) {
+        switch (self_shoot_info.risk_level)
+        {//如果需要控制临界状态，可以新增一个case，所以写成这个形式
+            case REGULAR:
+                break;
+            case RISK://RISK状态用作三连发的边界状态判断，所以直接在射击状态机里控制了
+                break;
+            case STOP://在此把STOP状态转化为cmd的ctrl mode，减少在射击状态机中的if判断
+                shoot_cmd.ctrl_mode = SHOOT_STOP;
+            break;
+        }
+    }
 }
 
 /**

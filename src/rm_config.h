@@ -107,9 +107,9 @@
 #define CHASSIS_MAX_V_MOTOR             16000
 // TODO: 参数待整定
 /* 跟随云台PID */
-#define CHASSIS_KP_V_FOLLOW             0.25f
+#define CHASSIS_KP_V_FOLLOW             0.20f
 #define CHASSIS_KI_V_FOLLOW             0
-#define CHASSIS_KD_V_FOLLOW             0.001f
+#define CHASSIS_KD_V_FOLLOW             0.0008f
 #define CHASSIS_INTEGRAL_V_FOLLOW       0
 #define CHASSIS_MAX_V_FOLLOW            20
 
@@ -128,7 +128,7 @@
 #endif
 
 
-#define CENTER_ECD_PITCH 4801         //云台pitch轴编码器归中值
+#define CENTER_ECD_PITCH 3433         //云台pitch轴编码器归中值
 /* pitch轴最大仰角 */
 #define PIT_ANGLE_MAX        16.5f
 /* pitch轴最大俯角 */
