@@ -129,7 +129,7 @@ static uint8_t sender_enable_flag[6] = {0};
          break;
      case GM6623:
         motor_id = motor->rx_id - 0x205;//yawID started with 0
-         if(motor_id <= 3)
+         if(delta_ecd <= 3 && delta_ecd >= -3)
          {
              motor_send_num = motor_id;
              motor_group = rt_strcmp(config->can_name,can_chassis) ? 3 : 0;
