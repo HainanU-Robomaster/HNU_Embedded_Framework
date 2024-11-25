@@ -32,8 +32,6 @@ static rt_device_t chassis_can, gimbal_can;
  *        该变量将在 dji_motor_control() 中使用,分组在 motor_send_grouping()中进行
  *
  * C610(m2006)/C620(m3508):0x1ff,0x200;
- * GM6020:0x1ff,0x2ff
- * 反馈(rx_id): GM6020: 0x204+id ; C610/C620: 0x200+id
  * GM6020/GM66623:0x1ff,0x2ff
  * 反馈(rx_id): GM6020: 0x204+id ; C610/C620: 0x200+id;GM6623:0x205+id(yaw id=0x205)
  * can1: [0]:0x1FF,[1]:0x200,[2]:0x2FF
@@ -129,7 +127,7 @@ static uint8_t sender_enable_flag[6] = {0};
          break;
      case GM6623:
         motor_id = motor->rx_id - 0x205;//yawID started with 0
-         if(delta_ecd <= 3 && delta_ecd >= -3)
+         if(motor_id <= 3)
          {
              motor_send_num = motor_id;
              motor_group = rt_strcmp(config->can_name,can_chassis) ? 3 : 0;
@@ -217,10 +215,10 @@ static void decode_dji_motor(dji_motor_object_t *motor, uint8_t *data)
             //6623没有测量角速度，只能通过编码器值计算一个
             delta_time = (current_time-last_time)*0.001f;//ms->s
             if(delta_time > 0) {
-                if(delta_ecd <= 3) {
+                if((delta_ecd <= 3 && delta_ecd >= 0) || delta_ecd < 0 && delta_ecd >=-3) {
                     measure->speed_aps = 0;
                 }else {
-                    measure->speed_aps = (1.0f - SPEED_SMOOTH_COEF) * measure->speed_aps + SPEED_SMOOTH_COEF *delta_ecd * ECD_ANGLE_COEF_DJI / delta_time;
+                    measure->speed_aps = decode_6623_aps(delta_ecd * ECD_ANGLE_COEF_DJI / delta_time);//这个循环数组的本意是剔除相差太大的噪声，但是效果不佳，当前的作用仅为加权
                 }
                 measure->speed_rpm = (1.0f - SPEED_SMOOTH_COEF) * measure->speed_rpm + SPEED_SMOOTH_COEF * (int16_t) (measure->speed_aps )/RPM_2_ANGLE_PER_SEC;//圈/分
             }
@@ -283,7 +281,8 @@ void dji_motor_control()
         motor = dji_motor_obj[i];
         measure = motor->measure;
 
-        set = motor->control(measure); // 调用对接的电机控制器计算
+         set = motor->control(measure); // 调用对接的电机控制器计算
+        // set=100;
         // 分组填入发送数据
         group = motor->send_group;
         num = motor->message_num;
@@ -348,3 +347,16 @@ dji_motor_object_t *dji_motor_register(motor_config_t *config, void *control)
     dji_motor_obj[idx++] = object;
     return object;
 }
+float decode_6623_aps(float inputs) {
+     static float num[3];
+     static int index = 0;
+     static float avrg;
+     index %= 3;
+         // if(abs(inputs-avrg)<5000){//给小了没有，给大了没用。。
+             num[index]=inputs;
+             for(int i=0;i<3;i++){
+                 avrg += num[i];
+             }
+             avrg/=3;
+             return num[index++];
+ }
