@@ -29,7 +29,7 @@ typedef struct
     float speed_aps;          // 角速度,单位为:度/秒
     float total_angle;        // 总角度,注意方向
     int32_t total_round;      // 总圈数,注意方向
-    float  target;            // 目标值(输出轴扭矩矩/速度/角度(单位度))
+    float  target;            // 目标值(输出轴扭矩/速度/角度(单位度))
 
     /* 以下是电调直接回传的数据 */
     uint16_t ecd;             // 0-8191
@@ -106,5 +106,5 @@ void dji_motor_enable(dji_motor_object_t *motor);
  * @param data 接收到的报文的数据
  */
 void dji_motot_rx_callback(rt_device_t dev, uint32_t id, uint8_t *data);
-
+float decode_6623_aps(float inputs);
 #endif /* _DJI_MOTOR_H */
