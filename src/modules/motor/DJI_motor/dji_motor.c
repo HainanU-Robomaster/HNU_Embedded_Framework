@@ -260,7 +260,7 @@ void dji_motor_control()
          motor = dji_motor_obj[i];
          measure = motor->measure;
 
-         //当电机为底盘电机，即挂载在can1总线且为3508电机
+         //当电机为底盘电机，即挂载在can1总线且为3508电机，使用电盘功率限制，其余正常填入报文
              if ((motor->motor_type==M3508)&&(motor->can_dev->parent.name[3]==49))
              {
             switch (motor->rx_id) {
