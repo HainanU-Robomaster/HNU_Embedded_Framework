@@ -6,13 +6,14 @@
 #include "dji_motor.h"
 #include "rm_config.h"
 #include "usr_callback.h"
+#include "rm_task.h"
 
 #define DBG_TAG   "dji.motor"
 #define DBG_LVL DBG_INFO
 #include <rtdbg.h>
+#include <math.h>
 
 #define DJI_MOTOR_CNT 14             // 默认波特率下，实测挂载电机极限数量
-#define NORMAL_CHASSIS
 /* 滤波系数设置为1的时候即关闭滤波 */
 #define SPEED_SMOOTH_COEF 0.85f      // 最好大于0.85
 #define CURRENT_SMOOTH_COEF 0.9f     // 必须大于0.9
@@ -21,7 +22,7 @@
 static uint8_t idx = 0; // register idx,是该文件的全局电机索引,在注册时使用
 /* DJI电机的实例,此处仅保存指针,内存的分配将通过电机实例初始化时通过malloc()进行 */
 static dji_motor_object_t *dji_motor_obj[DJI_MOTOR_CNT] = {NULL};
-
+ static struct referee_fdb_msg referee_fdb;
 static rt_device_t chassis_can, gimbal_can;
 
 // TODO: 0x2ff容易发送失败
@@ -204,7 +205,7 @@ void dji_motor_enable(dji_motor_object_t *motor)
 // 运算所有电机实例的控制器,发送控制报文
 void dji_motor_control()
 {
-#ifdef NORMAL_CHASSIS
+#ifdef BSP_USING_DEFAULT_MODE
      dji_motor_object_t *motor;
      dji_motor_measure_t measure;
      uint8_t group, num; // 电机组号和组内编号
@@ -229,22 +230,27 @@ void dji_motor_control()
          if (motor->stop_flag == MOTOR_STOP)
              rt_memset(send_msg[group].data + 2 * num, 0, 2 * sizeof(rt_uint8_t));
      }
+
      // 遍历flag,检查是否要发送这一帧报文
-     for (size_t i = 0; i < 6; ++i) {
-         if (sender_enable_flag[i]) {
-             if (i < 3) {
+     for (size_t i = 0; i < 6; ++i)
+     {
+         if (sender_enable_flag[i])
+         {
+             if(i < 3){
                  size = rt_device_write(chassis_can, 0, &send_msg[i], sizeof(send_msg[i]));
-             } else {
+             }
+             else{
                  size = rt_device_write(gimbal_can, 0, &send_msg[i], sizeof(send_msg[i]));
              }
-             if (size == 0) {
+             if (size == 0)
+             {
                  LOG_W("can dev write data failed!");
              }
          }
      }
 #endif
-#ifdef POWER_LIMIT_CHASSIS
-     {
+
+#ifdef BSP_USING_POWER_LIMIT
          dji_motor_object_t *motor;
          dji_motor_measure_t measure;
          uint8_t group, num; // 电机组号和组内编号
@@ -307,37 +313,21 @@ void dji_motor_control()
                                k2 * measure.real_current * measure.real_current +
                                measure.speed_rpm * measure.real_current * 0.000001997;
                     // 计算全局功率限制系数
-                    for (int j = 0; j < 4; ++j)
-                    {
-                        a += power[j];
-                    }
-                    k_zoom = referee_fdb.robot_status.chassis_power_limit / a;
-                    if (k_zoom < 1)
-                    {
-                        for (int j = 0; j < 4; ++j)
-                        {
-                            power[j] = k_zoom * power[j] - k1 * rpm[j] * rpm[j];
-                            if (set1[j] > 0) {
-                                set1[j] = (-0.000001997 * rpm[j] +sqrt(0.000001997 * rpm[j] * 0.000001997 * rpm[j] + 4 * power[j] * k1)) /(2 * k1);
-                            } else if (set1[j] < 0) {
-                                set1[j] = (-0.000001997 * rpm[j] -sqrt(0.000001997 * rpm[j] * 0.000001997 * rpm[j] + 4 * power[j] * k1)) /(2 * k1);
-                            }
-                        }
-                        a = 0;
-                    } else
-                    {
-                        a = 0;
-                    }
+//                  
                     for (int j = 0; j < 4; ++j)
                     {
                         send_msg[group1[j]].data[2 * num1[j]] = (uint8_t) (set1[j] >> 8);
                         send_msg[group1[j]].data[2 * num1[j] + 1] = (uint8_t) (set1[j] & 0x00ff);
                     }
-                      if (motor->stop_flag == MOTOR_STOP)
-                 rt_memset(send_msg[group].data + 2 * num, 0, 2 * sizeof(rt_uint8_t));
-                    break;
+                    if (motor->stop_flag == MOTOR_STOP)
+                    {
+                        for (int j = 0; j < 4; ++j)
+                    {
+                            rt_memset(send_msg[group1[j]].data + 2 * num1[j], 0, 2 * sizeof(rt_uint8_t));
+                    }
                 }
-                }
+             }
+             }
              }else{
                  set = motor->control(measure); // 调用对接的电机控制器计算
 
@@ -352,7 +342,6 @@ void dji_motor_control()
                  rt_memset(send_msg[group].data + 2 * num, 0, 2 * sizeof(rt_uint8_t));
          }
      }
-
        // 遍历flag,检查是否要发送这一帧报文
     for (size_t i = 0; i < 6; ++i)
     {
