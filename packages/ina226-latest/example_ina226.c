@@ -99,7 +99,7 @@ static int ina226_example(void)
     return RT_EOK;
 }
 
-//INIT_APP_EXPORT(ina226_example);
+INIT_APP_EXPORT(ina226_example);
 
 static int rt_hw_ina226_port(void)
 {
@@ -111,4 +111,4 @@ static int rt_hw_ina226_port(void)
     return RT_EOK;
 }
 
-//INIT_COMPONENT_EXPORT(rt_hw_ina226_port);
+INIT_COMPONENT_EXPORT(rt_hw_ina226_port);

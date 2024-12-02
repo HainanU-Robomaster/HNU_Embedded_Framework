@@ -313,7 +313,27 @@ void dji_motor_control()
                                k2 * measure.real_current * measure.real_current +
                                measure.speed_rpm * measure.real_current * 0.000001997;
                     // 计算全局功率限制系数
-//                  
+                    for (int j = 0; j < 4; ++j)
+                    {
+                        a += power[j];
+                    }
+                    k_zoom = referee_fdb.robot_status.chassis_power_limit / a;
+                    if (k_zoom < 1)
+                    {
+                        for (int j = 0; j < 4; ++j)
+                        {
+                            power[j] = k_zoom * power[j] - k1 * rpm[j] * rpm[j];
+                            if (set1[j] > 0) {
+                                set1[j] = (-0.000001997 * rpm[j] +sqrt(0.000001997 * rpm[j] * 0.000001997 * rpm[j] + 4 * power[j] * k1)) /(2 * k1);
+                            } else if (set1[j] < 0) {
+                                set1[j] = (-0.000001997 * rpm[j] -sqrt(0.000001997 * rpm[j] * 0.000001997 * rpm[j] + 4 * power[j] * k1)) /(2 * k1);
+                            }
+                        }
+                        a = 0;
+                    } else
+                    {
+                        a = 0;
+                    }
                     for (int j = 0; j < 4; ++j)
                     {
                         send_msg[group1[j]].data[2 * num1[j]] = (uint8_t) (set1[j] >> 8);
