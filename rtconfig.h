@@ -201,6 +201,9 @@
 /* STM32 HAL & SDK Drivers */
 
 
+/* Infineon HAL Packages */
+
+
 /* Kendryte SDK */
 
 
@@ -305,8 +308,8 @@
 #define BSP_USING_IST8310
 #define BSP_USING_IMU
 #define BSP_USING_BMI088
-#define BSP_USING_RC_DBUS
-#define BSP_USING_RC_KEYBOARD
+//#define BSP_BMI088_CALI
+#define BSP_USING_RC_SBUS
 #define BSP_USING_REFEREE
 
 /* RoboMaster Algorithms */
