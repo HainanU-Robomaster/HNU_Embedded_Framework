@@ -130,8 +130,8 @@
 #define YAW_MOTOR_ID     0x20B
 #define PITCH_MOTOR_ID   0x207
 
-#define CENTER_ECD_YAW   7539         //云台yaw轴编码器归中值
-#define CENTER_ECD_PITCH 6115         //云台pitch轴编码器归中值
+#define CENTER_ECD_YAW   6128         //云台yaw轴编码器归中值
+#define CENTER_ECD_PITCH 4142         //云台pitch轴编码器归中值
 
 /* pitch轴最大仰角 */
 #define PIT_ANGLE_MAX        14.0f
@@ -173,7 +173,7 @@
 
 /* 云台PITCH轴电机PID参数 */
 /* imu速度环 */
-#define PITCH_KP_V_IMU           5500
+#define PITCH_KP_V_IMU           1000
 #define PITCH_KI_V_IMU           23000
 #define PITCH_KD_V_IMU           0
 #define PITCH_INTEGRAL_V_IMU     1500
@@ -187,7 +187,7 @@
 */
 
 /* imu角度环 */
-#define PITCH_KP_A_IMU           0.459545f
+#define PITCH_KP_A_IMU           0.70f
 #define PITCH_KI_A_IMU           0.08009f
 #define PITCH_KD_A_IMU           0.00000032f
 #define PITCH_INTEGRAL_A_IMU     0.0f
