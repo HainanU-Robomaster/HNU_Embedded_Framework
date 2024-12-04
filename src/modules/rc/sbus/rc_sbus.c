@@ -91,6 +91,11 @@ static rt_err_t sbus_rc_decode(uint8_t *buff){
 static void rc_lost_callback(void *paramete)
 {
     LOG_W("Sbus RC lost!");
+    rt_memset(&rc_obj[NOW], 0, sizeof(rc_obj[NOW]));
+    rc_obj[NOW].sw1 = RC_UP;
+    rc_obj[NOW].sw2 = RC_UP;
+    rc_obj[NOW].sw3 = RC_UP;
+    rc_obj[NOW].sw4 = RC_UP;
 }
 
 /**

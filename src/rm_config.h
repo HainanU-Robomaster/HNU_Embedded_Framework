@@ -80,7 +80,7 @@
 /* 底盘轮子周长(mm) */
 #define WHEEL_PERIMETER 471
 /* 底盘的半径(mm) */
-#define LENGTH_RADIUS 230
+#define LENGTH_RADIUS 245
 
 /******** 底盘电机使用3508 *******/
 /* 3508底盘电机减速比 */
@@ -106,10 +106,11 @@
 
 /* 底盘旋转最大速度，单位是度每秒 */
 #define MAX_CHASSIS_VR_SPEED 8
-
+/* 旋转速度,rad/s */
+#define ROTATE_RATIO_VW 4
 /******** DBUS底盘小陀螺相关设置 *******/
-/*旋转速度*/
-#define ROTATE_RATIO 2
+/*旋转速度,rad/s*/
+#define ROTATE_RATIO 4
 
 /* --------------------------------- 底盘PID参数 -------------------------------- */
 /* 电机速度环 */
@@ -160,13 +161,13 @@
 #define YAW_MAX_A_IMU            25
 /* auto速度环 */
 #define YAW_KP_V_AUTO            10000
-#define YAW_KI_V_AUTO            0.1423
+#define YAW_KI_V_AUTO            20000
 #define YAW_KD_V_AUTO            0
 #define YAW_INTEGRAL_V_AUTO      0
 #define YAW_MAX_V_AUTO           30000
 /* auto角度环 */
-#define YAW_KP_A_AUTO            0.124710033270487f
-#define YAW_KI_A_AUTO            0.158443192644351f
+#define YAW_KP_A_AUTO            0.494710033270487f
+#define YAW_KI_A_AUTO            0.218443192644351f
 #define YAW_KD_A_AUTO            0
 #define YAW_INTEGRAL_A_AUTO      0
 #define YAW_MAX_A_AUTO           25
@@ -193,14 +194,14 @@
 #define PITCH_INTEGRAL_A_IMU     0.0f
 #define PITCH_MAX_A_IMU          20
 /* auto速度环 */
-#define PITCH_KP_V_AUTO          1350
-#define PITCH_KI_V_AUTO          0.00007153
+#define PITCH_KP_V_AUTO          1000
+#define PITCH_KI_V_AUTO          23000
 #define PITCH_KD_V_AUTO          0
 #define PITCH_INTEGRAL_V_AUTO    1500
 #define PITCH_MAX_V_AUTO         20000
 /* auto角度环 */
-#define PITCH_KP_A_AUTO          0.309545f
-#define PITCH_KI_A_AUTO          0.00008009f
+#define PITCH_KP_A_AUTO          0.70f
+#define PITCH_KI_A_AUTO          0.08009f
 #define PITCH_KD_A_AUTO          0.00000032f
 #define PITCH_INTEGRAL_A_AUTO    0.0f
 #define PITCH_MAX_A_AUTO         20

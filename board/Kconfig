@@ -331,13 +331,14 @@ menu "RoboMaster Modules"
         bool "Enable RC SBUS"
         default n
 
-    config BSP_USING_RC_DBUS
+    menuconfig BSP_USING_RC_DBUS
         bool "Enable RC DBUS"
         default y
-
-    config BSP_USING_RC_KEYBOARD
-        bool "Enable RC KEYBOARD"
-        default y
+        if BSP_USING_RC_DBUS
+            config BSP_USING_RC_KEYBOARD
+            bool "Enable RC KEYBOARD"
+            default y
+        endif
 
     config BSP_USING_REFEREE
         bool "Enable REFEREE"
