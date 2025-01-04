@@ -12,6 +12,7 @@
 #include "rm_algorithm.h"
 #include "rm_module.h"
 #include "rm_task.h"
+#include "rtdevice.h"
 
 /* BCP通讯协议相关 */
 //TODO: 考虑不同帧长的情况
@@ -207,5 +208,5 @@ typedef enum
     trans_OK=1,   //执行清空操作
     trans_NO=0,  //不执行清空操作
 } trans_back_e;
-
+void gimbal_down_rx_callback(rt_device_t dev, uint32_t id, uint8_t *data);
 #endif // RTTHREAD_TRANSMISSION_TASK_H
