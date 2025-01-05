@@ -5,7 +5,7 @@
 */
 #include "usr_callback.h"
 #include "rm_module.h"
-
+#include "transmission_task.h"
 // 将CAN1和CAN2注册的回调函数分开，避免两个总线上的相同ID冲突
 #ifdef BSP_USING_CAN1
 rt_err_t can1_rx_call(rt_device_t dev, rt_size_t size)
@@ -25,7 +25,9 @@ rt_err_t can1_rx_call(rt_device_t dev, rt_size_t size)
 #ifdef BSP_USING_LK_MOTOR
     lk_motot_rx_callback(dev, rxmsg.id, rxbuff);
 #endif /* BSP_USING_LK_MOTOR */
-
+#ifdef BSP_USING_GIMBAL_CAN_RECEIVE
+    gimbal_down_rx_callback(dev, rxmsg.id, rxbuff);
+#endif /* BSP_USING_GIMBAL_CAN_RECEIVE */
     return RT_EOK;
 }
 #endif /* BSP_USING_CAN1 */
@@ -48,7 +50,9 @@ rt_err_t can2_rx_call(rt_device_t dev, rt_size_t size)
 #ifdef BSP_USING_LK_MOTOR
     lk_motot_rx_callback(dev, rxmsg.id, rxbuff);
 #endif /* BSP_USING_LK_MOTOR */
-
+#ifdef BSP_USING_GIMBAL_CAN_RECEIVE
+    gimbal_down_rx_callback(dev, rxmsg.id, rxbuff);
+#endif /* BSP_USING_GIMBAL_CAN_RECEIVE */
     return RT_EOK;
 }
 #endif /* BSP_USING_CAN2 */

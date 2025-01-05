@@ -108,6 +108,7 @@ struct gimbal_fdb_msg
     gimbal_back_e back_mode;  // 云台归中情况
 
     float yaw_offset_angle_total;    //云台初始 yaw 轴角度 （由imu得）
+    float yaw_down_offset_angle_total;    //下云台初始 yaw 轴角度 （由下板imu得）
     float yaw_offset_angle;    //云台初始 yaw 轴角度 （由imu得）
     float pit_offset_angle;    //云台初始 pit 轴角度 （由imu得）
     float yaw_relative_angle;  //云台相对于初始位置的yaw轴角度
@@ -119,6 +120,8 @@ struct gimbal_fdb_msg
  */
  struct chassis_fdb_msg
  {
+     float filter_x_pos_gim;
+     float filter_y_pos_gim;
      float x_pos_gim;
      float y_pos_gim;
  };
@@ -141,6 +144,9 @@ struct shoot_fdb_msg
  { // 云台自瞄角度控制
      float yaw;
      float pitch;
+     float ins_low_yaw;
+     float ins_low_pitch;
+     float ins_low_roll;
      float linear_x;
      float linear_y;
      float linear_z;
@@ -148,6 +154,10 @@ struct shoot_fdb_msg
      float angular_y;
      float angular_z;
      rt_uint8_t heartbeat;
+     float yaw_down;
+     float pitch_down;
+     float yaw_down_total_angle;
+     float gyro_down_z;
  };
  /* ------------------------------ referee反馈状态数据 ------------------------------ */
 /**

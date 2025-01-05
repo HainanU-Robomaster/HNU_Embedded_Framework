@@ -33,9 +33,9 @@
 #define USART_RC       "uart3"
 
 /* ---------------------------------- 遥控器相关 --------------------------------- */
- /* 遥控器通道最大值 */
+/* 遥控器通道最大值 */
 #define RC_MAX_VALUE      784.0f
- /* DBUS遥控器通道最大值 */
+/* DBUS遥控器通道最大值 */
 #define RC_DBUS_MAX_VALUE      660.0f
 #define RC_RATIO               0.0009f
 #define KB_RATIO               0.010f
@@ -130,9 +130,11 @@
 /* ---------------------------------- 云台相关 ---------------------------------- */
 #define YAW_MOTOR_ID     0x20B
 #define PITCH_MOTOR_ID   0x207
+#define YAW_DOWN_MOTOR_ID   0x209
 
 #define CENTER_ECD_YAW   6128         //云台yaw轴编码器归中值
 #define CENTER_ECD_PITCH 4142         //云台pitch轴编码器归中值
+#define CENTER_ECD_YAW_DOWN   1328     //云台yaw_down轴编码器归中值
 
 /* pitch轴最大仰角 */
 #define PIT_ANGLE_MAX        14.0f
@@ -205,6 +207,32 @@
 #define PITCH_KD_A_AUTO          0.00000032f
 #define PITCH_INTEGRAL_A_AUTO    0.0f
 #define PITCH_MAX_A_AUTO         20
+
+/* 下云台yaw_down轴电机PID参数 */
+/* imu速度环 */
+#define YAW_DOWN_KP_V_IMU             10000
+#define YAW_DOWN_KI_V_IMU             20000
+#define YAW_DOWN_KD_V_IMU             0
+#define YAW_DOWN_INTEGRAL_V_IMU       0
+#define YAW_DOWN_MAX_V_IMU            30000
+/* imu角度环 */
+#define YAW_DOWN_KP_A_IMU             0.494710033270487f
+#define YAW_DOWN_KI_A_IMU             0.218443192644351f
+#define YAW_DOWN_KD_A_IMU             0
+#define YAW_DOWN_INTEGRAL_A_IMU       0
+#define YAW_DOWN_MAX_A_IMU            25
+/* auto速度环 */
+#define YAW_DOWN_KP_V_AUTO            10000
+#define YAW_DOWN_KI_V_AUTO            20000
+#define YAW_DOWN_KD_V_AUTO            0
+#define YAW_DOWN_INTEGRAL_V_AUTO      0
+#define YAW_DOWN_MAX_V_AUTO           30000
+/* auto角度环 */
+#define YAW_DOWN_KP_A_AUTO            0.494710033270487f
+#define YAW_DOWN_KI_A_AUTO            0.218443192644351f
+#define YAW_DOWN_KD_A_AUTO            0
+#define YAW_DOWN_INTEGRAL_A_AUTO      0
+#define YAW_DOWN_MAX_A_AUTO           25
 
 /* ---------------------------------- 发射相关 ---------------------------------- */
 // TODO: 实际值待整定

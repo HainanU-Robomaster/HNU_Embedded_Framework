@@ -34,6 +34,14 @@ RpyTypeDef rpy_tx_data={
 };
 RpyTypeDef rpy_rx_data; //接收解析结构体
 static rt_uint32_t heart_dt;
+static struct rt_can_msg send_msg[6] = {
+        [0] = {.id = 0x3ff, .ide  = RT_CAN_STDID, .rtr = RT_CAN_DTR, .len  = 0x08, .data = {0}},
+        [1] = {.id = 0x300, .ide  = RT_CAN_STDID, .rtr = RT_CAN_DTR, .len  = 0x08, .data = {0}},
+        [2] = {.id = 0x3ff, .ide  = RT_CAN_STDID, .rtr = RT_CAN_DTR, .len  = 0x08, .data = {0}},
+        [3] = {.id = 0x3ff, .ide  = RT_CAN_STDID, .rtr = RT_CAN_DTR, .len  = 0x08, .data = {0}},
+        [4] = {.id = 0x300, .ide  = RT_CAN_STDID, .rtr = RT_CAN_DTR, .len  = 0x08, .data = {0}},
+        [5] = {.id = 0x3ff, .ide  = RT_CAN_STDID, .rtr = RT_CAN_DTR, .len  = 0x08, .data = {0}},
+};
 /* ---------------------------------usb虚拟串口数据相关 --------------------------------- */
 static rt_device_t vs_port = RT_NULL;
 /* -------------------------------- 线程间通讯话题相关 ------------------------------- */
@@ -43,7 +51,9 @@ static void trans_sub_pull(void);
 static void trans_pub_push(void);
 static void trans_sub_init(void);
 static void trans_pub_init(void);
-
+/* -------------------------------- can通讯相关 ------------------------------- */
+static rt_device_t gimbal_can = RT_NULL;
+static void Can_send(float data1_original,float data2_original,struct rt_can_msg data_send);
 /**
  * @brief trans 线程中所有订阅者初始化（如有其它数据需求可在其中添加）
  */
@@ -104,6 +114,7 @@ void transmission_task_entry(void* argument)
     r_buffer_point=r_buffer;
     /* 设置接收回调函数 */
     rt_device_set_rx_indicate(vs_port, usb_input);
+    gimbal_can = rt_device_find(CAN_GIMBAL);
     LOG_I("Transmission Task Start");
     while (1)
     {
@@ -118,6 +129,10 @@ void transmission_task_entry(void* argument)
             heart_dt=dwt_get_time_ms();
         }
         Send_to_pc(rpy_tx_data);
+        //
+#ifndef BSP_USING_GIMBAL_CAN_RECEIVE
+        Can_send(ins_data.gyro[2],ins_data.yaw_total_angle,send_msg[0]);
+#endif /* BSP_USING_GIMBAL_CAN_RECEIVE */
 /*--------------------------------------------------具体需要发送的数据---------------------------------*/
         /* 发布数据更新 */
         trans_pub_push();
@@ -264,3 +279,42 @@ void Getdata()
         memset(&rpy_rx_data, 0, sizeof(rpy_rx_data));
     }
 }*/
+static void Can_send(float data1_original,float data2_original,struct rt_can_msg data_send){
+
+    uint32_t *temp_data1;
+    uint32_t *temp_data2;
+
+    temp_data1= (uint32_t *)&data1_original;
+    temp_data2= (uint32_t *)&data2_original;
+
+    data_send.data[3] = *temp_data1 >> 24;
+    data_send.data[2] = *temp_data1 >> 16;
+    data_send.data[1] = *temp_data1 >> 8;
+    data_send.data[0] = *temp_data1;
+    data_send.data[7] = *temp_data2 >> 24;
+    data_send.data[6] = *temp_data2 >> 16;
+    data_send.data[5] = *temp_data2 >> 8;
+    data_send.data[4] = *temp_data2;
+
+    rt_device_write(gimbal_can, 0, &data_send, sizeof(data_send));
+
+}
+void gimbal_down_rx_callback(rt_device_t dev, uint32_t id, uint8_t *data){
+    gimbal_can = rt_device_find(CAN_GIMBAL);
+    uint32_t gyro_down_z;
+    uint32_t yaw_down_total_angle;
+    // 找到对应的实例后再调用decode_dji_motor进行解析
+    for (size_t i = 0; i < 1; ++i)
+    {
+        if (dev == gimbal_can && id == send_msg[i].id)
+        {
+            uint8_t *rxbuff = data;
+            gyro_down_z = (uint32_t )rxbuff[0] | (((uint32_t )rxbuff[1]) << 8) | (((uint32_t )rxbuff[2]) << 16)
+                              | (((uint32_t )rxbuff[3]) << 24) ;
+            yaw_down_total_angle = (uint32_t )rxbuff[4] | (((uint32_t )rxbuff[5]) << 8) | (((uint32_t )rxbuff[6]) << 16)
+                             | (((uint32_t )rxbuff[7]) << 24) ;
+           trans_fdb.gyro_down_z= *((float *)&gyro_down_z);
+           trans_fdb.yaw_down_total_angle = *((float *)&yaw_down_total_angle);
+        }
+    }
+}
