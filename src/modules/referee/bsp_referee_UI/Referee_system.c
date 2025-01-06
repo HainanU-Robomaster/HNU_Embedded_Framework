@@ -48,6 +48,10 @@ static struct shoot_fdb_msg shoot_fdb;
 static struct referee_fdb_msg referee_fdb;
 static publisher_t *pub_referee;
 
+
+
+
+
 static void referee_pub_init(void);
 static void referee_sub_init(void);
 static void referee_pub_push(void);
@@ -220,6 +224,7 @@ void Referee_system_Init(uint8_t *  rx1_buf, uint8_t *rx2_buf, uint16_t dma_buf_
 
 void Referee_Data_Unpack()
 {
+
     unpack_data_t *p_obj = &referee_unpack_obj;
     uint8_t byte = 0;
     uint8_t sof = HEADER_SOF;
@@ -262,6 +267,7 @@ void Referee_Data_Unpack()
                     p_obj->unpack_step = STEP_HEADER_SOF;
                     p_obj->index = 0;
                 }
+
             }break;
             case STEP_FRAME_SEQ:
             {
@@ -287,6 +293,7 @@ void Referee_Data_Unpack()
                         p_obj->index = 0;
                     }
                 }
+
             }break;
 
             case STEP_DATA_CRC16:
@@ -307,6 +314,7 @@ void Referee_Data_Unpack()
                         //校验通过，则将码好的数据memcp到指定结构体中
                         Referee_Data_Solve(p_obj->protocol_packet);
                     }
+
                 }
             }break;
 
