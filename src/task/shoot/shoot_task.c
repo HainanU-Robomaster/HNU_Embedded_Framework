@@ -122,6 +122,8 @@ void shoot_task_entry(void* argument)
     static float sht_start;
     static int servo_cvt_num;
     static int reverse_cnt;
+    static float sht_gap_time;
+    static float sht_gap_start_time;
 
     shoot_motor_init();
     shoot_pub_init();
@@ -276,9 +278,11 @@ void shoot_task_entry(void* argument)
             case SHOOT_STOP:
                 shoot_motor_ref[TRIGGER_MOTOR] = 0;
                 total_angle_flag=0;
+                shoot_fdb.trigger_status=SHOOT_WAITING;
                 break;
 
             case SHOOT_ONE:
+
                 if(total_angle_flag == 0)
                 {
                     shoot_motor_ref[TRIGGER_MOTOR]= sht_motor[TRIGGER_MOTOR]->measure.total_angle;
@@ -290,6 +294,7 @@ void shoot_task_entry(void* argument)
                     shoot_cmd.trigger_status=TRIGGER_OFF;//扳机归零
                 }
                 shoot_fdb.trigger_status=SHOOT_OK;
+
                 break;
 
             case SHOOT_THREE:

@@ -115,7 +115,7 @@
 
 /* ---------------------------------- 云台相关 ---------------------------------- */
 #define YAW_MOTOR_ID     0x207
-#define PITCH_MOTOR_ID   0x208
+#define PITCH_MOTOR_ID   0x205
 
 /*云台编码器归中*/
 //#define GIMBAL_SIDEWAYS
@@ -123,7 +123,7 @@
 #define SIDEWAYS_ANGLE   36
 #define CENTER_ECD_YAW   3818         //云台yaw轴编码器归中值(侧身)
 #else
-#define CENTER_ECD_YAW   5430         //云台yaw轴编码器归中值
+#define CENTER_ECD_YAW   5470         //云台yaw轴编码器归中值
 #define SIDEWAYS_ANGLE   0
 #endif
 

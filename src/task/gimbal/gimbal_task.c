@@ -55,9 +55,9 @@ motor_config_t gimbal_motor_config[GIM_MOTOR_NUM] = {
                 .controller = &gim_controller[YAW],
         },
         {
-                .motor_type = GM6020,
+                .motor_type = M2006,   //英雄pitch轴改用丝杆结构，换用2006电机
                 .can_name = CAN_GIMBAL,
-                .rx_id = PITCH_MOTOR_ID,
+                .rx_id = PITCH_MOTOR_ID,   //电机ID待定
                 .controller = &gim_controller[PITCH],
         }
 };
@@ -105,7 +105,8 @@ void gimbal_thread_entry(void *argument)
 
         // 云台本身相对于归中值的角度，加负号
         yaw_motor_relive = -(rt_int16_t)get_relative_pos(gim_motor[YAW]->measure.ecd, CENTER_ECD_YAW) / 22.75f;
-        pitch_motor_relive = -(rt_int16_t )get_relative_pos(gim_motor[PITCH]->measure.ecd, CENTER_ECD_PITCH) / 22.75f;
+        // pitch_motor_relive = -(rt_int16_t )get_relative_pos(gim_motor[PITCH]->measure.ecd, CENTER_ECD_PITCH) / 22.75f;
+        pitch_motor_relive = ins_data.pitch;   //pitch轴改用丝杆结构，直接使用ins_data.pitch作为相对角度值
 
 //        if((gim_cmd.ctrl_mode==GIMBAL_GYRO||GIMBAL_AUTO)&&gim_fdb.back_mode==BACK_IS_OK)
 //        {
@@ -141,10 +142,11 @@ void gimbal_thread_entry(void *argument)
             gim_motor_ref[YAW] = yaw_motor_relive * ( 1 - yaw_ramp->calc(yaw_ramp));
             gim_motor_ref[PITCH] = pitch_motor_relive* ( 1 - pit_ramp->calc(pit_ramp));
 
-            if((abs(gim_motor[PITCH]->measure.ecd - CENTER_ECD_PITCH) <= 20)
+            //pitch轴改用丝杆结构，只能根据imu数据控制归中
+            if(abs(ins_data.pitch) <= (20 / 22.75f)
                && (abs(gim_motor[YAW]->measure.ecd - CENTER_ECD_YAW) <= 80)
                // 若长时间陷于归中模式，可以适当放宽归中条件
-               || ((abs(gim_motor[PITCH]->measure.ecd - CENTER_ECD_PITCH) <= 200)
+               || ((abs(ins_data.pitch) <= (200 / 22.75f))
                    && (abs(gim_motor[YAW]->measure.ecd - CENTER_ECD_YAW) <= 200)
                    && (init_dt > INIT_TIMEOUT)))
             {
@@ -284,7 +286,7 @@ static void gimbal_motor_init()
     gim_controller[PITCH].pid_angle_auto = pid_register(&pitch_angle_auto_config);
     gim_motor[PITCH] = dji_motor_register(&gimbal_motor_config[PITCH], motor_control_pitch);
 }
-rt_int16_t test_speed_yaw, test_speed_pitch;
+rt_int16_t test_speed_yaw, test_speed_pitch=0;
 static rt_int16_t motor_control_yaw(dji_motor_measure_t measure){
     /* PID局部指针，切换不同模式下PID控制器 */
     static pid_obj_t *pid_angle;
@@ -364,7 +366,7 @@ static rt_int16_t motor_control_pitch(dji_motor_measure_t measure){
             pid_speed = gim_controller[PITCH].pid_speed_imu;
             pid_angle = gim_controller[PITCH].pid_angle_imu;
             get_speed = ins_data.gyro[Y];
-            get_angle = pitch_motor_relive;
+            get_angle = ins_data.pitch;  //pitch轴改用丝杆结构，直接使用ins_data.pitch作为相对角度值
             break;
         case GIMBAL_GYRO:
             pid_speed = gim_controller[PITCH].pid_speed_imu;
@@ -388,20 +390,21 @@ static rt_int16_t motor_control_pitch(dji_motor_measure_t measure){
         pid_clear(pid_speed);
     }
 
-    if(gim_cmd.ctrl_mode == GIMBAL_INIT)  // 编码器闭环
-    {
-        /*串级pid的使用，角度环套在速度环上面*/
-        /* 注意负号 */
-        pid_out_angle = pid_calculate(pid_angle, get_angle, gim_motor_ref[PITCH]);  // 编码器增长方向与imu相反
-        send_data = -pid_calculate(pid_speed, get_speed, pid_out_angle);     // 电机转动正方向与imu相反
-    }
-    else /* imu闭环 */
-    {
+    // 对于英雄的pitch轴，由于采用丝杆结构，编码器数值无法作为归中位置的参考，故均采用imu闭环
+     if(gim_cmd.ctrl_mode == GIMBAL_INIT)  // 编码器闭环
+     {
+         /*串级pid的使用，角度环套在速度环上面*/
+         /* 注意负号 */
+         pid_out_angle = pid_calculate(pid_angle, get_angle, -gim_motor_ref[PITCH]);
+         send_data = -pid_calculate(pid_speed, get_speed, pid_out_angle);     // 电机转动正方向与imu相反
+      }
+     else /* imu闭环 */
+     {
         /* 限制云台俯仰角度 */
         VAL_LIMIT(gim_motor_ref[PITCH], PIT_ANGLE_MIN, PIT_ANGLE_MAX);
-        /* 注意负号 */
-        pid_out_angle = pid_calculate(pid_angle, get_angle, gim_motor_ref[PITCH]);
-        send_data = pid_calculate(pid_speed, get_speed, pid_out_angle);      // 电机转动正方向与imu相反
+        /* 注意负号 (实测期望角度是反的，故加负号)*/
+        pid_out_angle = pid_calculate(pid_angle, get_angle, -gim_motor_ref[PITCH]);
+        send_data = -pid_calculate(pid_speed, get_speed, pid_out_angle);      // 电机转动正方向与imu相反
     }
 
     return send_data;
