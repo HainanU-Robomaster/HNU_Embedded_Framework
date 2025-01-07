@@ -142,7 +142,7 @@
 /* -------------------------------- 云台电机PID参数 ------------------------------- */
 /* 云台yaw轴电机PID参数 */
 /* imu速度环 */
-#define YAW_KP_V_IMU             5000
+#define YAW_KP_V_IMU             6000
 #define YAW_KI_V_IMU             0
 #define YAW_KD_V_IMU             0.08
 #define YAW_INTEGRAL_V_IMU       0

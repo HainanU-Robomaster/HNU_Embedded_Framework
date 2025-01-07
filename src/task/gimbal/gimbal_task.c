@@ -309,15 +309,15 @@ static rt_int16_t motor_control_yaw(dji_motor_measure_t measure){
         pid_angle = gim_controller[YAW].pid_angle_imu;
         get_speed = ins_data.gyro[Z];
         get_angle = ins_data.yaw_total_angle - gim_fdb.yaw_offset_angle_total;
-        //将imu零飘清0，无奈之举，期待imu零飘问题的解决
-        if(get_speed < 0.5 && get_speed > -0.5)
-        {
-            get_speed = 0;
-        }
-        if(get_angle < 0.8 && get_angle > -0.8)
-        {
-            get_angle = 0;
-        }
+        // 将imu零飘清0，无奈之举，期待imu零飘问题的解决
+         if(get_speed < 0.5 && get_speed > -0.5)
+         {
+             get_speed = 0;
+         }
+         if(get_angle < 0.8 && get_angle > -0.8)
+         {
+             get_angle = 0;
+         }
         break;
     case GIMBAL_AUTO:
         pid_speed = gim_controller[YAW].pid_speed_auto;
