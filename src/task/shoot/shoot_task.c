@@ -361,7 +361,9 @@ static rt_int16_t motor_control_right(dji_motor_measure_t measure){
         feed = 0;
 
     set = feed + (int16_t) pid_calculate(sht_controller[RIGHT_FRICTION].pid_speed, measure.speed_rpm, shoot_motor_ref[RIGHT_FRICTION]);
+//    return 0;
     return set;
+
 }
 
 static float left_speed;
@@ -376,6 +378,7 @@ static rt_int16_t motor_control_left(dji_motor_measure_t measure){
     else
         feed = 0;
     set = feed + (int16_t) pid_calculate(sht_controller[LEFT_FRICTION].pid_speed, measure.speed_rpm, shoot_motor_ref[LEFT_FRICTION]/*left_speed*/);
+//    return 0;
     return set;
 }
 

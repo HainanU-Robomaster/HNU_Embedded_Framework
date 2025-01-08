@@ -295,9 +295,10 @@
 #define BSP_I2C1_SDA_PIN 41
 #define BSP_USING_I2C2
 
-/* Notice: PE2 --> 66; PH3 --> 115 */
-#define BSP_I2C2_SCL_PIN GET_PIN(B,13)
-#define BSP_I2C2_SDA_PIN GET_PIN(B,12)
+/* Notice: PB12 --> 28; PB13 --> 29 */
+
+#define BSP_I2C2_SCL_PIN 29
+#define BSP_I2C2_SDA_PIN 28
 #define BSP_USING_USBD
 
 /* RoboMaster Modules */
@@ -321,6 +322,8 @@
 #define BSP_USING_FILTER
 #define BSP_USING_KALMAN_FILTER
 #define BSP_USING_RAMP
+#define BSP_USING_CHASSIS_POWER_MODE
+#define BSP_USING_DEFAULT_MODE
 
 /* RoboMaster Tasks */
 

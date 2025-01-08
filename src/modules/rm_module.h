@@ -38,6 +38,10 @@
 #ifdef BSP_USING_IMU
 #include "imu.h"
 #endif /* BSP_USING_IMU */
+#ifdef BSP_USING_INA226
+#include "ina226.h"
+#include "ti_ina226_sensor_v1.h"
+#endif /* BSP_USING_INA226 */
 #ifdef BSP_USING_RC_DBUS
 #include "rc_dbus.h"
 #endif /* BSP_USING_RC_DBUS */

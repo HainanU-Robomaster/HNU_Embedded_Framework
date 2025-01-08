@@ -13,6 +13,7 @@
 build
 Debug
 documentation/html
+packages/
 *~
 *.o
 *.obj
