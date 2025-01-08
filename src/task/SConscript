@@ -43,6 +43,10 @@ if GetDepend(['BSP_USING_REFEREE_TASK']):
     src += Glob(cwd + '/referee/*.c')
     path += [cwd + '/referee']
 
+if GetDepend(['BSP_USING_INA226_TASK']):
+    src += Glob(cwd + '/ina226_power/*.c')
+    path += [cwd + '/ina226_power']
+
 group = DefineGroup('RM_Task', src, depend = [''], CPPPATH = path)
 
 Return('group')

@@ -60,6 +60,11 @@ if GetDepend(['BSP_USING_LEG']):
     src += Glob(cwd + '/leg/*.c')
     path += [cwd + '/leg']
 
+if GetDepend(['BSP_USING_INA226']):
+    src += Glob(cwd + '/ina226-latest/ina226.c')
+    src += [cwd + '/ina226-latest/ti_ina226_sensor_v1.c']
+    path += [cwd + '/ina226-latest']
+
 
 src  += [cwd + '/usr_callback.c']
 
