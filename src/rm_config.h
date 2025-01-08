@@ -100,9 +100,9 @@
 
 /* --------------------------------- 底盘PID参数 -------------------------------- */
 /* 电机速度环 */
-#define CHASSIS_KP_V_MOTOR              5.5
-#define CHASSIS_KI_V_MOTOR              0
-#define CHASSIS_KD_V_MOTOR              0.0005
+#define CHASSIS_KP_V_MOTOR              7.5
+#define CHASSIS_KI_V_MOTOR              0.165
+#define CHASSIS_KD_V_MOTOR              0.0000
 #define CHASSIS_INTEGRAL_V_MOTOR        2000
 #define CHASSIS_MAX_V_MOTOR             16000
 // TODO: 参数待整定
@@ -123,7 +123,7 @@
 #define SIDEWAYS_ANGLE   36
 #define CENTER_ECD_YAW   3818         //云台yaw轴编码器归中值(侧身)
 #else
-#define CENTER_ECD_YAW   5470         //云台yaw轴编码器归中值
+#define CENTER_ECD_YAW   5262         //云台yaw轴编码器归中值
 #define SIDEWAYS_ANGLE   0
 #endif
 

@@ -270,6 +270,7 @@ menu "On-chip Peripheral Drivers"
                 default 41
         endif
 
+
     menuconfig BSP_USING_USBD
 		bool "Enable USB"
 		default y
@@ -299,6 +300,10 @@ menu "RoboMaster Modules"
     config BSP_USING_DWT
         bool "Enable DWT"
         default y
+
+    config BSP_USING_INA226
+         bool "Enable INA226"
+         default n
 
     config BSP_USING_PS_MSG
         bool "Enable Pub Sub Message"
@@ -371,11 +376,27 @@ menu "RoboMaster Algorithms"
        bool "Select USING Ramp"
        default y
 
+    menuconfig BSP_USING_CHASSIS_POWER_MODE
+        bool "Select USING CHASSIS_POWER_MODE"
+        default y
+        if BSP_USING_CHASSIS_POWER_MODE
+            config BSP_USING_POWER_LIMIT
+                bool "Select POWER_LIMIT"
+                default y
+            config BSP_USING_DEFAULT_MODE
+                bool "Select DEFAULT MODE "
+                default n
+        endif
+
 endmenu
 
 menu "RoboMaster Tasks"
     config BSP_USING_EXAMPLE_TASK
         bool "Select USING Example Task"
+        default n
+
+    config BSP_USING_INA226_TASK
+        bool "Select USING INA226 Task"
         default n
 
     config BSP_USING_INS_TASK
