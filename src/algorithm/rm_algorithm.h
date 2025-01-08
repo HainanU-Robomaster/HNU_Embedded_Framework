@@ -23,11 +23,18 @@
 #ifdef BSP_USING_QUATERNIONESF
 #include "QuaternionEKF.h"
 #endif /* BSP_USING_QUATERNIONESF */
+#ifdef BSP_USING_FILTER
+#include "filter32.h"
+#endif /* BSP_USING_FILTER */
 #ifdef BSP_USING_KALMAN_FILTER
 #include "kalman_filter.h"
 #endif /* BSP_USING_KALMAN_FILTER */
 #ifdef BSP_USING_RAMP
 #include "ramp.h"
 #endif /* BSP_USING_RAMP */
+#ifdef BSP_USING_RC_SBUS
+#include "modules/rc/sbus/rc_sbus.h"
+#endif
+
 
 #endif /* _RM_ALGORITHM_H */
