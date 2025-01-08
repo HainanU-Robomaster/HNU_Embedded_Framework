@@ -109,7 +109,7 @@
 
 /******** DBUS底盘小陀螺相关设置 *******/
 /*旋转速度*/
-#define ROTATE_RATIO 2
+#define ROTATE_RATIO 5
 
 /* --------------------------------- 底盘PID参数 -------------------------------- */
 /* 电机速度环 */
@@ -130,8 +130,8 @@
 #define YAW_MOTOR_ID     0x207
 #define PITCH_MOTOR_ID   0x208
 
-#define CENTER_ECD_YAW   6112         //云台yaw轴编码器归中值
-#define CENTER_ECD_PITCH 6115         //云台pitch轴编码器归中值
+#define CENTER_ECD_YAW   6811      //云台yaw轴编码器归中值
+#define CENTER_ECD_PITCH 6104         //云台pitch轴编码器归中值
 
 /* pitch轴最大仰角 */
 #define PIT_ANGLE_MAX        31.0f
@@ -173,7 +173,7 @@
 
 /* 云台PITCH轴电机PID参数 */
 /* imu速度环 */
-#define PITCH_KP_V_IMU           5500
+#define PITCH_KP_V_IMU           6000
 #define PITCH_KI_V_IMU           23000
 #define PITCH_KD_V_IMU           0
 #define PITCH_INTEGRAL_V_IMU     1500

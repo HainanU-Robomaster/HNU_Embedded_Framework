@@ -9,10 +9,10 @@
  */
 #include <rtthread.h>
 #include <rtdevice.h>
-#include "ti_ina226_sensor_v1.h"
-
-#include "stdio.h"
-#include "ina226.h"
+#include "example_ina226.h"
+#include "rm_module.h"
+//#include "ti_ina226_sensor_v1.h"
+//#include "ina226.h"
 
 
 
@@ -26,7 +26,7 @@
 #define INA226_ADDR (0x40)
 power_monitor_data_t power_monitor_data;
 float volts,volts1,current;
-static void ina226_thread_entry(void *parameter)
+void ina226_thread_entry(void *argument)
 {
     rt_device_t dev = RT_NULL;
     struct rt_sensor_data sensor_data;
@@ -61,45 +61,14 @@ static void ina226_thread_entry(void *parameter)
             power_monitor_data_t *hData = (power_monitor_data_t *)&power_monitor_data;
             ina226_get_current(&(hData->ma));
             ina226_get_bus_voltage(&(hData->mv));
-            // ina226_get_power(&(hData->mw));
             hData->mw = hData->mv * hData->ma / 1e3;
             res = RT_EOK;
-         //   ina226_get_bus_voltage(&volts);
-           // ina226_get_shunt_voltage(&volts1);
-            ina226_get_current1(&current);
-
-
-//            sprintf(ma,"%f", power_monitor_data.ma);
-//            sprintf(mv,"%f", power_monitor_data.mv);
-//            sprintf(mw,"%f", power_monitor_data.mw);
-            rt_kprintf("current : %s mA,voltage : %s V ,power : %s mW\n", ma, mv, mw);
         }
         rt_thread_mdelay(1);
     }
 }
 
-static int ina226_example(void)
-{
-    rt_thread_t ina226_thread;
-    ina226_thread = rt_thread_create(
-            "ina226",
-            ina226_thread_entry,
-            RT_NULL,
-            1024,
-            RT_THREAD_PRIORITY_MAX / 2,
-            10);
-    if (ina226_thread != RT_NULL)
-    {
-        rt_thread_startup(ina226_thread);
-    }
-    else
-    {
-        return -RT_ERROR;
-    }
-    return RT_EOK;
-}
 
-INIT_APP_EXPORT(ina226_example);
 
 static int rt_hw_ina226_port(void)
 {

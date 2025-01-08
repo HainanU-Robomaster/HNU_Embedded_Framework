@@ -6,22 +6,24 @@
 #include "dji_motor.h"
 #include "rm_config.h"
 #include "usr_callback.h"
-
+#include "rm_task.h"
 #define DBG_TAG   "dji.motor"
 #define DBG_LVL DBG_INFO
 #include <rtdbg.h>
-
+float power__all=0;
 #define DJI_MOTOR_CNT 14             // 默认波特率下，实测挂载电机极限数量
-#define NORMAL_CHASSIS
 /* 滤波系数设置为1的时候即关闭滤波 */
 #define SPEED_SMOOTH_COEF 0.85f      // 最好大于0.85
 #define CURRENT_SMOOTH_COEF 0.9f     // 必须大于0.9
 #define ECD_ANGLE_COEF_DJI 0.043945f // (360/8192),将编码器值转化为角度制
-
+#define  constant 0.675f//2650
+#define k_rpm 1.453e-07//0.001651
+#define k_current 1.23e-07//0.000000001721
+#define k_Torque 1.997e-06f
 static uint8_t idx = 0; // register idx,是该文件的全局电机索引,在注册时使用
 /* DJI电机的实例,此处仅保存指针,内存的分配将通过电机实例初始化时通过malloc()进行 */
 static dji_motor_object_t *dji_motor_obj[DJI_MOTOR_CNT] = {NULL};
-
+ static struct referee_fdb_msg referee_fdb;
 static rt_device_t chassis_can, gimbal_can;
 
 // TODO: 0x2ff容易发送失败
@@ -204,7 +206,7 @@ void dji_motor_enable(dji_motor_object_t *motor)
 // 运算所有电机实例的控制器,发送控制报文
 void dji_motor_control()
 {
-#ifdef NORMAL_CHASSIS
+#ifdef BSP_USING_DEFAULT_MODE
      dji_motor_object_t *motor;
      dji_motor_measure_t measure;
      uint8_t group, num; // 电机组号和组内编号
@@ -229,38 +231,40 @@ void dji_motor_control()
          if (motor->stop_flag == MOTOR_STOP)
              rt_memset(send_msg[group].data + 2 * num, 0, 2 * sizeof(rt_uint8_t));
      }
+
      // 遍历flag,检查是否要发送这一帧报文
-     for (size_t i = 0; i < 6; ++i) {
-         if (sender_enable_flag[i]) {
-             if (i < 3) {
+     for (size_t i = 0; i < 6; ++i)
+     {
+         if (sender_enable_flag[i])
+         {
+             if(i < 3){
                  size = rt_device_write(chassis_can, 0, &send_msg[i], sizeof(send_msg[i]));
-             } else {
+             }
+             else{
                  size = rt_device_write(gimbal_can, 0, &send_msg[i], sizeof(send_msg[i]));
              }
-             if (size == 0) {
+             if (size == 0)
+             {
                  LOG_W("can dev write data failed!");
              }
          }
      }
 #endif
-#ifdef POWER_LIMIT_CHASSIS
-     {
+#ifdef BSP_USING_POWER_LIMIT
          dji_motor_object_t *motor;
          dji_motor_measure_t measure;
          uint8_t group, num; // 电机组号和组内编号
          int16_t set = 0; // 电机控制器计算得到的输出值
          uint8_t size = 0;
-         rt_int16_t set1[4],power[4],rpm[4];
-         double a=0,k_zoom=0,k1=0,k2=0;
+         int16_t set1[4],rpm[4];
+         float power[4]={0},k_zoom = 0,power_all = 0;
          uint8_t group1[4]={0},num1[4]={0};
-
           // 遍历所有电机实例,运行控制算法并填入报文
      for (size_t i = 0; i < idx; ++i)
          {
          motor = dji_motor_obj[i];
          measure = motor->measure;
-
-         //当电机为底盘电机，即挂载在can1总线且为3508电机，使用电盘功率限制，其余正常填入报文
+         //当电机为底盘电机，即挂载在can1总线且为3508电机，使用底盘功率限制，其余正常填入报文
              if ((motor->motor_type==M3508)&&(motor->can_dev->parent.name[3]==49))
              {
             switch (motor->rx_id) {
@@ -268,11 +272,11 @@ void dji_motor_control()
                     {
                     set1[0] = motor->control(measure);
                     rpm[0] = measure.speed_rpm;
-                    power[0] = k1 * measure.speed_rpm * measure.speed_rpm +
-                               k2 * measure.real_current * measure.real_current +
-                               measure.speed_rpm * measure.real_current * 0.000001997;
                     group1[0] = motor->send_group;
                     num1[0] = motor->message_num;
+                    power[0] = k_rpm * motor->measure.speed_rpm * motor->measure.speed_rpm +
+                            k_current * set1[0] * set1[0] +
+                            motor->measure.speed_rpm * set1[0] * k_Torque + constant;
                     break;
                     }
                 case 0x202:
@@ -281,9 +285,9 @@ void dji_motor_control()
                     rpm[1] = measure.speed_rpm;
                     group1[1] = motor->send_group;
                     num1[1] = motor->message_num;
-                    power[1] = k1 * measure.speed_rpm * measure.speed_rpm +
-                               k2 * measure.real_current * measure.real_current +
-                               measure.speed_rpm * measure.real_current * 0.000001997;
+                    power[1] = k_rpm * motor->measure.speed_rpm * motor->measure.speed_rpm +
+                               k_current * set1[1] * set1[1] +
+                               motor->measure.speed_rpm * set1[1] * k_Torque + constant;
                     break;
                     }
                 case 0x203:
@@ -292,9 +296,9 @@ void dji_motor_control()
                     rpm[2] = measure.speed_rpm;
                     group1[2] = motor->send_group;
                     num1[2] = motor->message_num;
-                    power[2] = k1 * measure.speed_rpm * measure.speed_rpm +
-                               k2 * measure.real_current * measure.real_current +
-                               measure.speed_rpm * measure.real_current * 0.000001997;
+                    power[2] = k_rpm * motor->measure.speed_rpm * motor->measure.speed_rpm +
+                               k_current * set1[2] * set1[2] +
+                               motor->measure.speed_rpm * set1[2] * k_Torque + constant;
                     break;
                     }
                 case 0x204:
@@ -303,44 +307,62 @@ void dji_motor_control()
                     set1[3] = motor->control(measure);;
                     group1[3] = motor->send_group;
                     num1[3] = motor->message_num;
-                    power[3] = k1 * measure.speed_rpm * measure.speed_rpm +
-                               k2 * measure.real_current * measure.real_current +
-                               measure.speed_rpm * measure.real_current * 0.000001997;
+                    power[3] = k_rpm * motor->measure.speed_rpm * motor->measure.speed_rpm +
+                               k_current * set1[3] * set1[3] +
+                               motor->measure.speed_rpm * set1[3] * k_Torque + constant;
                     // 计算全局功率限制系数
                     for (int j = 0; j < 4; ++j)
-                    {
-                        a += power[j];
+                    { power_all += power[j];
+
+                        if(power[j]>0) {
+
+                        }
                     }
-                    k_zoom = referee_fdb.robot_status.chassis_power_limit / a;
-                    if (k_zoom < 1)
-                    {
+                    power__all=power_all; //用于观察与裁判系统读取功率的拟合效果
+                    int powerlimit = 50;
+                    int power_limit = referee_fdb.robot_status.chassis_power_limit;
+                    if (power_limit >=50 && power_limit <=120){
+                        powerlimit = power_limit;
+                    }
+                    //底盘功率限制单位转换
+                    if (power_all>powerlimit) {
+                        k_zoom = powerlimit / power_all;
                         for (int j = 0; j < 4; ++j)
                         {
-                            power[j] = k_zoom * power[j] - k1 * rpm[j] * rpm[j];
-                            if (set1[j] > 0) {
-                                set1[j] = (-0.000001997 * rpm[j] +sqrt(0.000001997 * rpm[j] * 0.000001997 * rpm[j] + 4 * power[j] * k1)) /(2 * k1);
-                            } else if (set1[j] < 0) {
-                                set1[j] = (-0.000001997 * rpm[j] -sqrt(0.000001997 * rpm[j] * 0.000001997 * rpm[j] + 4 * power[j] * k1)) /(2 * k1);
+                            power[j] = k_zoom * power[j] - k_rpm * rpm[j] * rpm[j] - constant;
+                            if (set1[j] >= 0) {
+                                set1[j] = (-k_Torque * rpm[j] +sqrt(k_Torque * rpm[j] * k_Torque * rpm[j] + 4 * power[j] * k_current)) /(2 * k_current);
+                                if (set1[j]>16000){
+                                    set1[j]=0;
+                                }
+                            } else {
+                                set1[j] = (-k_Torque * rpm[j] -sqrt(k_Torque * rpm[j] * k_Torque * rpm[j] + 4 * power[j] * k_current)) /(2 * k_current);
+                                if (set1[j]<-16000){
+                                    set1[j]=0;
+                                }
                             }
                         }
-                        a = 0;
+                        power_all = 0;
                     } else
                     {
-                        a = 0;
+                        power_all = 0;
                     }
                     for (int j = 0; j < 4; ++j)
                     {
                         send_msg[group1[j]].data[2 * num1[j]] = (uint8_t) (set1[j] >> 8);
                         send_msg[group1[j]].data[2 * num1[j] + 1] = (uint8_t) (set1[j] & 0x00ff);
                     }
-                      if (motor->stop_flag == MOTOR_STOP)
-                 rt_memset(send_msg[group].data + 2 * num, 0, 2 * sizeof(rt_uint8_t));
-                    break;
+                    if (motor->stop_flag == MOTOR_STOP)
+                    {
+                        for (int j = 0; j < 4; ++j)
+                    {
+                            rt_memset(send_msg[group1[j]].data + 2 * num1[j], 0, 2 * sizeof(rt_uint8_t));
+                    }
                 }
-                }
+             }
+             }
              }else{
                  set = motor->control(measure); // 调用对接的电机控制器计算
-
              // 分组填入发送数据
              group = motor->send_group;
              num = motor->message_num;
@@ -352,7 +374,6 @@ void dji_motor_control()
                  rt_memset(send_msg[group].data + 2 * num, 0, 2 * sizeof(rt_uint8_t));
          }
      }
-
        // 遍历flag,检查是否要发送这一帧报文
     for (size_t i = 0; i < 6; ++i)
     {
