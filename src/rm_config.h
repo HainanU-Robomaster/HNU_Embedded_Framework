@@ -26,6 +26,10 @@
 #define PWM_COVER        "pwm1"
 #define PWM_COVER_CH     2
 
+/* 倍镜舵机所挂载的 PWM 设备及通道号 */
+//通道3默认未开启，记得去env开启
+#define PWM_MIRROR        "pwm1"
+#define PWM_MIRROR_CH     3
 /* 遥控器所挂载的 usart 设备名称 */
 #define USART_RC       "uart3"
 
@@ -75,8 +79,8 @@
 /* 底盘轮子周长(mm) */
 #define WHEEL_PERIMETER   471
 
-#define LENGTH_A 290 //底盘长的一半(mm)
-#define LENGTH_B 265 //底盘宽的一半(mm)
+#define LENGTH_A 260 //底盘长的一半(mm)
+#define LENGTH_B 200 //底盘宽的一半(mm)
 
 /******** 底盘电机使用3508 *******/
 /* 3508底盘电机减速比 */
@@ -130,7 +134,7 @@
 
 #define CENTER_ECD_PITCH 3433         //云台pitch轴编码器归中值
 /* pitch轴最大仰角 */
-#define PIT_ANGLE_MAX        16.5f
+#define PIT_ANGLE_MAX        35.5f
 /* pitch轴最大俯角 */
 #define PIT_ANGLE_MIN        -15.0f
 
@@ -239,7 +243,7 @@
 #define TRIGGER_MAX_V          20000
 /* 角度环 */
 #define TRIGGER_KP_A           5
-#define TRIGGER_KI_A           0
+#define TRIGGER_KI_A           3
 #define TRIGGER_KD_A           0
 #define TRIGGER_INTEGRAL_A     0
 #define TRIGGER_MAX_A          10000
