@@ -98,6 +98,7 @@ struct shoot_cmd_msg
     // TODO: 添加发射弹速控制
     int16_t shoot_speed;     // 发射弹速
     uint8_t cover_open;      // 弹仓盖开关
+    uint8_t mirror_enable;     // 倍镜使能开关
     rt_bool_t friction_status;
 };
 

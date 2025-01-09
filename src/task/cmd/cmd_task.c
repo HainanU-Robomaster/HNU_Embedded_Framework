@@ -35,6 +35,8 @@ static void cmd_sub_pull(void);
 
 /*发射停止标志位*/
 static int trigger_flag=0;
+/*舵机控制倍镜旋转标志位*/
+static int mirror_servo_flag=0;
 /*自瞄鼠标累计操作值*/
 static float mouse_accumulate_x=0;
 static float mouse_accumulate_y=0;
@@ -594,16 +596,30 @@ static void remote_to_cmd_pc_DT7(void)
         else
             reverse_cnt=0;
     }
-    /*-----------------------------------------------------------舵机开盖关盖--------------------------------------------------------------*/
-    if(rc_now->kb.bit.R==1||rc_now->wheel<=-200)
+    // /*-----------------------------------------------------------舵机开盖关盖--------------------------------------------------------------*/
+    // if(rc_now->kb.bit.R==1||rc_now->wheel<=-200)
+    // {
+    //     shoot_cmd.cover_open=1;
+    // }
+    // else
+    // {
+    //     shoot_cmd.cover_open=0;
+    // }
+    /*-----------------------------------------------------------倍镜舵机控制--------------------------------------------------------------*/
+    //在未开启摩擦轮时，向上拨轮选择是否旋转倍镜
+    if(rc_now->kb.bit.R==1||rc_now->wheel <= -600 && shoot_cmd.friction_status==0)
     {
-        shoot_cmd.cover_open=1;
+        mirror_servo_flag = 1;//旋转倍镜标志位
     }
-    else
+    //当拨轮恢复到0时，根据旋转倍镜标志位判断是否旋转倍镜
+    else if(rc_now->wheel == 0 && mirror_servo_flag==1 && shoot_cmd.friction_status==0)
     {
-        shoot_cmd.cover_open=0;
+        mirror_servo_flag = 0;
+        if(shoot_cmd.mirror_enable==1)
+            shoot_cmd.mirror_enable=0;
+        else
+            shoot_cmd.mirror_enable=1;
     }
-
 
     /*--------------------------------------------------手动模式下清空自瞄传过来的角度buffer------------------------------------------------------*/
     if (gim_cmd.ctrl_mode==GIMBAL_GYRO)

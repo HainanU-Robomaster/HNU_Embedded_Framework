@@ -31,6 +31,7 @@ static void shoot_sub_pull(void);
 
 /*舵机pwm设备*/
 static struct rt_device_pwm *servo_cover_dev;  // 弹仓盖舵机
+static struct rt_device_pwm *servo_mirror_dev;  //倍镜舵机
 
 //转子角度标志位，防止切换设计模式时拨弹电机反转
 static int total_angle_flag=SHOOT_ANGLE_CONTINUE;
@@ -97,6 +98,7 @@ static rt_int16_t motor_control_trigger(dji_motor_measure_t measure);
 static void shoot_self_cmd(void);
 static void shoot_self_cmd_Init(void);
 static void self_shoot_msg_restrict(void);
+static void servo_init();
 
 static char referee_status=1;
 typedef struct {
@@ -128,7 +130,7 @@ void shoot_task_entry(void* argument)
     shoot_motor_init();
     shoot_pub_init();
     shoot_sub_init();
-//    servo_init();
+    servo_init();
 /*----------------------射击状态初始化----------------------------------*/
     shoot_cmd.ctrl_mode=SHOOT_STOP;
     shoot_cmd.trigger_status=TRIGGER_OFF;
@@ -140,11 +142,16 @@ void shoot_task_entry(void* argument)
         /* 更新该线程所有的订阅者 */
         shoot_sub_pull();
 
-        /* 弹仓盖舵机控制 */
-        if (shoot_cmd.cover_open == 1)
-            rt_pwm_set(servo_cover_dev, PWM_COVER_CH, 20000000, 2000000);
+        // /* 弹仓盖舵机控制 */
+        // if (shoot_cmd.cover_open == 1)
+        //     rt_pwm_set(servo_cover_dev, PWM_COVER_CH, 20000000, 2000000);
+        // else
+        //     rt_pwm_set(servo_cover_dev, PWM_COVER_CH, 20000000, 750000);
+        /* 倍镜舵机控制 */
+        if (shoot_cmd.mirror_enable == 1)
+            rt_pwm_set(servo_mirror_dev, PWM_MIRROR_CH, 20000000, 500000);
         else
-            rt_pwm_set(servo_cover_dev, PWM_COVER_CH, 20000000, 750000);
+            rt_pwm_set(servo_mirror_dev, PWM_MIRROR_CH, 20000000, 2500000);
 
         /* 电机控制启动 */
         for (uint8_t i = 0; i < SHT_MOTOR_NUM; i++)
@@ -358,6 +365,20 @@ void shoot_task_entry(void* argument)
 //    rt_pwm_set(servo_cover_dev, PWM_COVER_CH, 20000000, 780000);
 //    rt_pwm_enable(servo_cover_dev, PWM_COVER_CH);
 //}
+
+/**
+ * @brief 倍镜舵机初始化
+ */
+static void servo_init(){
+    servo_mirror_dev=(struct rt_device_pwm *) rt_device_find(PWM_MIRROR);
+    if(servo_mirror_dev == RT_NULL)
+    {
+        LOG_E("Can't find mirror servo pwm device!");
+        return;
+    }
+    rt_pwm_set(servo_mirror_dev, PWM_MIRROR_CH, 20000000, 250000);
+    rt_pwm_enable(servo_mirror_dev, PWM_MIRROR_CH);
+}
 
 /**
  * @brief shoot 线程电机初始化
