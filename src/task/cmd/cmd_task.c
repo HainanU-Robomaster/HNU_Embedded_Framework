@@ -550,24 +550,24 @@ static void remote_to_cmd_pc_DT7(void)
 //        }
 
     }
-    //单发模式,首先判断拨轮是否向上，进入单发模式但不开火
-    else if(rc_now->wheel<=-350 &&(shoot_cmd.friction_status==1))
+    //开启摩擦轮默认进入单发模式,首先判断V键是否按下或者拨轮是否向上，标记开火标志位
+    else if(km.v_sta == KEY_PRESS_ONCE || rc_now->wheel<=-350 &&(shoot_cmd.friction_status==1))
     {
-        trigger_flag++;
+        trigger_flag=1;
         shoot_cmd.ctrl_mode=SHOOT_ONE;
         shoot_cmd.trigger_status=TRIGGER_OFF;
     }
-    //当拨轮恢复到0时，根据标志位判断状态
-    else if(rc_now->wheel ==0 && (shoot_cmd.friction_status==1))
+    //当V键松开时或拨轮恢复到0时，根据标志位判断状态
+    else if(km.v_sta == KEY_RELEASE || rc_now->wheel ==0 && (shoot_cmd.friction_status==1))
     {
-        //如果开火标志位小于等于5（可根据需要设置），表示进入单发模式时间过短，不开火
-        if(trigger_flag <=5 && trigger_flag >= 0)
+        //如果开火标志位等于0，不开火
+        if(trigger_flag ==0)
         {
             shoot_cmd.ctrl_mode=SHOOT_ONE;
             shoot_cmd.trigger_status=TRIGGER_OFF;
         }
-        //如果开火标志位大于5，表示进入单发模式，开火
-        else if(trigger_flag > 5)
+        //如果开火标志位等于1，表示进入单发模式，开火
+        else if(trigger_flag == 1)
         {
             shoot_cmd.ctrl_mode=SHOOT_ONE;
             shoot_cmd.trigger_status=TRIGGER_ON;
@@ -576,10 +576,6 @@ static void remote_to_cmd_pc_DT7(void)
             {
                 trigger_flag=0;
             }
-        }
-        else
-        {
-             shoot_cmd.ctrl_mode=SHOOT_STOP;
         }
     }
     else

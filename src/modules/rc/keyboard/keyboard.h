@@ -49,7 +49,7 @@ typedef struct
     kb_state_e f_sta; //F键按键状态
     kb_state_e shift_sta; //shift键按键状态
     kb_state_e ctrl_sta; //ctrl键按键状态
-    kb_state_e v_sta; //ctrl键按键状态
+    kb_state_e v_sta; //V键按键状态
 
     uint16_t lk_cnt;
     uint16_t rk_cnt;
