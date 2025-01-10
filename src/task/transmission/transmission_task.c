@@ -37,10 +37,10 @@ static rt_uint32_t heart_dt;
 static struct rt_can_msg send_msg[6] = {
         [0] = {.id = 0x3ff, .ide  = RT_CAN_STDID, .rtr = RT_CAN_DTR, .len  = 0x08, .data = {0}},
         [1] = {.id = 0x300, .ide  = RT_CAN_STDID, .rtr = RT_CAN_DTR, .len  = 0x08, .data = {0}},
-        [2] = {.id = 0x3ff, .ide  = RT_CAN_STDID, .rtr = RT_CAN_DTR, .len  = 0x08, .data = {0}},
-        [3] = {.id = 0x3ff, .ide  = RT_CAN_STDID, .rtr = RT_CAN_DTR, .len  = 0x08, .data = {0}},
-        [4] = {.id = 0x300, .ide  = RT_CAN_STDID, .rtr = RT_CAN_DTR, .len  = 0x08, .data = {0}},
-        [5] = {.id = 0x3ff, .ide  = RT_CAN_STDID, .rtr = RT_CAN_DTR, .len  = 0x08, .data = {0}},
+        [2] = {.id = 0x310, .ide  = RT_CAN_STDID, .rtr = RT_CAN_DTR, .len  = 0x08, .data = {0}},
+        [3] = {.id = 0x320, .ide  = RT_CAN_STDID, .rtr = RT_CAN_DTR, .len  = 0x08, .data = {0}},
+        [4] = {.id = 0x330, .ide  = RT_CAN_STDID, .rtr = RT_CAN_DTR, .len  = 0x08, .data = {0}},
+        [5] = {.id = 0x340, .ide  = RT_CAN_STDID, .rtr = RT_CAN_DTR, .len  = 0x08, .data = {0}},
 };
 /* ---------------------------------usb虚拟串口数据相关 --------------------------------- */
 static rt_device_t vs_port = RT_NULL;
@@ -132,6 +132,10 @@ void transmission_task_entry(void* argument)
         //
 #ifndef BSP_USING_GIMBAL_CAN_RECEIVE
         Can_send(ins_data.gyro[2],ins_data.yaw_total_angle,send_msg[0]);
+        Can_send(trans_fdb.angular_x,trans_fdb.angular_y,send_msg[1]);
+        Can_send(trans_fdb.angular_z,trans_fdb.linear_x,send_msg[2]);
+        Can_send(trans_fdb.linear_y,trans_fdb.linear_z,send_msg[3]);
+
 #endif /* BSP_USING_GIMBAL_CAN_RECEIVE */
 /*--------------------------------------------------具体需要发送的数据---------------------------------*/
         /* 发布数据更新 */
@@ -304,9 +308,9 @@ void gimbal_down_rx_callback(rt_device_t dev, uint32_t id, uint8_t *data){
     uint32_t gyro_down_z;
     uint32_t yaw_down_total_angle;
     // 找到对应的实例后再调用decode_dji_motor进行解析
-    for (size_t i = 0; i < 1; ++i)
+    for (size_t i = 0; i < 4; ++i)
     {
-        if (dev == gimbal_can && id == send_msg[i].id)
+        if (dev == gimbal_can && id == send_msg[0].id)
         {
             uint8_t *rxbuff = data;
             gyro_down_z = (uint32_t )rxbuff[0] | (((uint32_t )rxbuff[1]) << 8) | (((uint32_t )rxbuff[2]) << 16)
@@ -315,6 +319,36 @@ void gimbal_down_rx_callback(rt_device_t dev, uint32_t id, uint8_t *data){
                              | (((uint32_t )rxbuff[7]) << 24) ;
            trans_fdb.gyro_down_z= *((float *)&gyro_down_z);
            trans_fdb.yaw_down_total_angle = *((float *)&yaw_down_total_angle);
+        }
+        if (dev == gimbal_can && id == send_msg[1].id)
+        {
+            uint8_t *rxbuff = data;
+            gyro_down_z = (uint32_t )rxbuff[0] | (((uint32_t )rxbuff[1]) << 8) | (((uint32_t )rxbuff[2]) << 16)
+                          | (((uint32_t )rxbuff[3]) << 24) ;
+            yaw_down_total_angle = (uint32_t )rxbuff[4] | (((uint32_t )rxbuff[5]) << 8) | (((uint32_t )rxbuff[6]) << 16)
+                                   | (((uint32_t )rxbuff[7]) << 24) ;
+            trans_fdb.angular_x= *((float *)&gyro_down_z);
+            trans_fdb.angular_y= *((float *)&yaw_down_total_angle);
+        }
+        if (dev == gimbal_can && id == send_msg[2].id)
+        {
+            uint8_t *rxbuff = data;
+            gyro_down_z = (uint32_t )rxbuff[0] | (((uint32_t )rxbuff[1]) << 8) | (((uint32_t )rxbuff[2]) << 16)
+                          | (((uint32_t )rxbuff[3]) << 24) ;
+            yaw_down_total_angle = (uint32_t )rxbuff[4] | (((uint32_t )rxbuff[5]) << 8) | (((uint32_t )rxbuff[6]) << 16)
+                                   | (((uint32_t )rxbuff[7]) << 24) ;
+            trans_fdb.angular_z= *((float *)&gyro_down_z);
+            trans_fdb.linear_x= *((float *)&yaw_down_total_angle);
+        }
+        if (dev == gimbal_can && id == send_msg[3].id)
+        {
+            uint8_t *rxbuff = data;
+            gyro_down_z = (uint32_t )rxbuff[0] | (((uint32_t )rxbuff[1]) << 8) | (((uint32_t )rxbuff[2]) << 16)
+                          | (((uint32_t )rxbuff[3]) << 24) ;
+            yaw_down_total_angle = (uint32_t )rxbuff[4] | (((uint32_t )rxbuff[5]) << 8) | (((uint32_t )rxbuff[6]) << 16)
+                                   | (((uint32_t )rxbuff[7]) << 24) ;
+            trans_fdb.linear_y= *((float *)&gyro_down_z);
+            trans_fdb.linear_z= *((float *)&yaw_down_total_angle);
         }
     }
 }
