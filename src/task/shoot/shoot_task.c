@@ -315,8 +315,9 @@ void shoot_task_entry(void* argument)
                 {
                     shoot_motor_ref[TRIGGER_MOTOR]= shoot_motor_ref[TRIGGER_MOTOR] + TRIGGER_MOTOR_51_TO_ANGLE * 19;//M3508的减速比为 19:1，因此转轴旋转51.43度，要在转子的基础上乘19倍
                     shoot_cmd.trigger_status=TRIGGER_OFF;//扳机归零
+                    shoot_fdb.trigger_status=SHOOT_OK;
                 }
-                shoot_fdb.trigger_status=SHOOT_OK;
+
                 break;
 
             case SHOOT_COUNTINUE:
