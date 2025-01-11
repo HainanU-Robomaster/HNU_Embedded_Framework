@@ -70,6 +70,15 @@ static float mouse_accumulate_y=0;
 /*储存鼠标坐标数据*/
 First_Order_Filter_t mouse_y_lpf,mouse_x_lpf;
 float Ballistic;  //对自瞄数据进行手动鼠标弹道补偿
+/* ------------------------------- 灯条指示灯控制 ------------------------------ */
+extern struct light_ops light_ops;//指示灯控制结构体
+
+
+/* * @example:
+ *      light_ops.light_init();
+ *      light_ops.light_write_rgb_to_node(lilac_330,5);//灯板第六个灯就会亮浅紫色,对应颜色宏定义在rm_config.h结尾
+ * /
+
 /* --------------------------------- cmd线程入口 -------------------------------- */
 static float cmd_dt;
 

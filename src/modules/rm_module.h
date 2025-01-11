@@ -52,8 +52,9 @@
 #include "fifo.h"
 #include "Referee_system.h"
 #endif /* BSP_USING_REFEREE */
-#ifdef BSP_USING_LEG
-#include "drv_leg.h"
-#endif /* BSP_USING_LEG */
+#ifdef BSP_USING_LIGHT
+#include "light.h"
+#endif /* BSP_USING_LIGHT */
+
 #define BSP_USING_GIMBAL_CAN_RECEIVE
 #endif /* _RM_MODULE_H */

@@ -326,7 +326,16 @@ menu "RoboMaster Modules"
                     default n
                 endif
         endif
-    
+
+    menuconfig BSP_USING_LIGHT
+        bool "Enable LIGHT"
+        default y
+        if BSP_USING_LIGHT
+            config BSP_USING_WS2812
+                bool "Using WS2812"
+                default y
+        endif
+
     config BSP_USING_RC_SBUS
         bool "Enable RC SBUS"
         default n
