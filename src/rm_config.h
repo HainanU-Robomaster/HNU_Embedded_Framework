@@ -25,6 +25,10 @@
 #define SPI_ACC        "spi1"
 #define SPI_ACC_CS     4
 
+/* 灯板所挂载的 SPI 设备名称及 CS 引脚 */
+#define SPI_LED        "spi2"
+#define SPI_LED_DEVICE "spi20"
+
 /* 弹仓盖舵机所挂载的 PWM 设备及通道号 */
 #define PWM_COVER        "pwm1"
 #define PWM_COVER_CH     2
@@ -289,5 +293,20 @@
 #define TRIGGER_KD_A           0
 #define TRIGGER_INTEGRAL_A     0
 #define TRIGGER_MAX_A          10000
+
+// 以下编码准寻· 光学色相环(RGB模型)-12色
+#define red_0 0xFF0000             // 红
+#define brown_30 0xFF7F00          // 棕色
+#define yellow_60 0xFFFF00         // 黄色
+#define dark_green_90 0x7FFF00     // 深绿色
+#define medium_green_120 0x00FF00  // 中绿色
+#define light_green_150 0x00FF7F   // 浅绿色
+#define baby_blue_180 0x00FFFF     // 浅蓝色
+#define medium_blue_210 0x007FFF   // 中蓝色
+#define dark_blue_240 0x0000FF     // 深蓝色
+#define modena_270 0x7F00FF        // 深紫色
+#define medium_purple_300 0xFF00FF // 中紫色
+#define lilac_330 0xFF007F         // 浅紫色
+#define white_360 0xFFFFFF         // 白色
 
 #endif /* _RM_CONFIG_H */

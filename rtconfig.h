@@ -146,15 +146,6 @@
 /* Wiced WiFi */
 
 
-/* CYW43012 WiFi */
-
-
-/* BL808 WiFi */
-
-
-/* CYW43439 WiFi */
-
-
 /* IoT Cloud */
 
 
@@ -177,6 +168,9 @@
 /* u8g2: a monochrome graphic library */
 
 
+/* PainterEngine: A cross-platform graphics application framework written in C language */
+
+
 /* tools packages */
 
 
@@ -196,27 +190,11 @@
 
 /* peripheral libraries and drivers */
 
-/* HAL & SDK Drivers */
-
-/* STM32 HAL & SDK Drivers */
-
-
-/* Infineon HAL Packages */
-
 
 /* Kendryte SDK */
 
 
-/* sensors drivers */
-
-
-/* touch drivers */
-
-
 /* AI packages */
-
-
-/* Signal Processing and Control Algorithm Packages */
 
 
 /* miscellaneous packages */
@@ -232,7 +210,7 @@
 /* Arduino libraries */
 
 
-/* Projects and Demos */
+/* Projects */
 
 
 /* Sensors */
@@ -251,12 +229,10 @@
 
 /* Communication */
 
-
 /* Device Control */
 
 
 /* Other */
-
 
 /* Signal IO */
 
@@ -285,11 +261,14 @@
 #define BSP_USING_TIM4
 #define BSP_USING_PWM
 #define BSP_USING_PWM1
+#define BSP_USING_PWM1_CH1
 #define BSP_USING_PWM1_CH2
 #define BSP_USING_PWM10
 #define BSP_USING_PWM10_CH1
 #define BSP_USING_SPI
 #define BSP_USING_SPI1
+#define BSP_USING_SPI2
+#define BSP_SPI2_TX_USING_DMA
 #define BSP_USING_I2C1
 
 /* Notice: PA8 --> 8; PC9 --> 41 */
@@ -308,7 +287,8 @@
 #define BSP_USING_IST8310
 #define BSP_USING_IMU
 #define BSP_USING_BMI088
-//#define BSP_BMI088_CALI
+#define BSP_USING_LIGHT
+#define BSP_USING_WS2812
 #define BSP_USING_RC_SBUS
 #define BSP_USING_REFEREE
 

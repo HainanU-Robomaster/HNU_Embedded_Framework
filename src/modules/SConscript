@@ -64,6 +64,12 @@ if GetDepend(['BSP_USING_LEG']):
     src += Glob(cwd + '/leg/*.c')
     path += [cwd + '/leg']
 
+if GetDepend(['BSP_USING_LIGHT']):
+    path += [cwd + '/light']
+
+if GetDepend(['BSP_USING_WS2812']):
+    src += Glob(cwd + '/light/ws2812/ws2812.c')
+    path += [cwd + '/light/ws2812']
 
 src  += [cwd + '/usr_callback.c']
 
