@@ -35,7 +35,6 @@ static struct rt_device_pwm *servo_mirror_dev;  //倍镜舵机
 
 //转子角度标志位，防止切换设计模式时拨弹电机反转
 static int total_angle_flag=SHOOT_ANGLE_CONTINUE;
-
 /*发射模块电机使用数量*/
 //#define SHT_MOTOR_NUM 3
 #define SHT_MOTOR_NUM 4
@@ -115,7 +114,7 @@ typedef struct {
 static self_shoot_info_e self_shoot_info;
 /* --------------------------------- 射击线程入口 --------------------------------- */
 static float sht_dt;
-
+static int shoot_cnt;
 /**
  * @brief shoot线程入口函数
  */
@@ -267,9 +266,9 @@ void shoot_task_entry(void* argument)
         /*开关摩擦轮*/
         if (shoot_cmd.friction_status==1)
         {
-            shoot_motor_ref[RIGHT_FRICTION] = 8000;//摩擦轮常转
-            shoot_motor_ref[MIDDLE_FRICTION] = 8000;
-            shoot_motor_ref[LEFT_FRICTION] = -8000;
+            shoot_motor_ref[RIGHT_FRICTION] = 8500;//摩擦轮常转 实测最大转速为8800
+            shoot_motor_ref[MIDDLE_FRICTION] = 8500;
+            shoot_motor_ref[LEFT_FRICTION] = -8500;
             /*从自动连发模式切换三连发及单发模式时，要继承总转子角度*/
         }
         else
@@ -290,6 +289,10 @@ void shoot_task_entry(void* argument)
 
             case SHOOT_ONE:
 
+                if(shoot_cmd.trigger_status == TRIGGER_OFF)
+                {
+                    shoot_fdb.trigger_status=SHOOT_WAITING;
+                }
                 if(total_angle_flag == 0)
                 {
                     shoot_motor_ref[TRIGGER_MOTOR]= sht_motor[TRIGGER_MOTOR]->measure.total_angle;
@@ -297,10 +300,17 @@ void shoot_task_entry(void* argument)
                 }
                 if (shoot_cmd.trigger_status == TRIGGER_ON)
                 {
-                    shoot_motor_ref[TRIGGER_MOTOR]= shoot_motor_ref[TRIGGER_MOTOR] + TRIGGER_MOTOR_51_TO_ANGLE * 19;//M3508的减速比为 19:1，因此转轴旋转51.43度，要在转子的基础上乘19倍
+                    sht_gap_time = dwt_get_time_ms() - sht_gap_start_time;
+                    sht_gap_start_time = dwt_get_time_ms();
+                    if(sht_gap_time>=200)
+                    {
+                        shoot_fdb.shoot_cnt++;
+                        //M3508的减速比为 19:1，因此转轴旋转51.43度，要在转子的基础上乘19倍
+                        shoot_motor_ref[TRIGGER_MOTOR]= shoot_motor_ref[TRIGGER_MOTOR] + TRIGGER_MOTOR_51_TO_ANGLE * 19;
+                    }
                     shoot_cmd.trigger_status=TRIGGER_OFF;//扳机归零
+                    shoot_fdb.trigger_status=SHOOT_OK;
                 }
-                shoot_fdb.trigger_status=SHOOT_OK;
 
                 break;
 
@@ -313,6 +323,7 @@ void shoot_task_entry(void* argument)
                 }
                 if (shoot_cmd.trigger_status == TRIGGER_ON)
                 {
+
                     shoot_motor_ref[TRIGGER_MOTOR]= shoot_motor_ref[TRIGGER_MOTOR] + TRIGGER_MOTOR_51_TO_ANGLE * 19;//M3508的减速比为 19:1，因此转轴旋转51.43度，要在转子的基础上乘19倍
                     shoot_cmd.trigger_status=TRIGGER_OFF;//扳机归零
                     shoot_fdb.trigger_status=SHOOT_OK;

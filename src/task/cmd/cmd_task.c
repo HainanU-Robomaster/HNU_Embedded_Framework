@@ -551,7 +551,7 @@ static void remote_to_cmd_pc_DT7(void)
 
     }
     //开启摩擦轮默认进入单发模式,首先判断V键是否按下或者拨轮是否向上，标记开火标志位
-    else if(km.v_sta == KEY_PRESS_ONCE || rc_now->wheel<=-350 &&(shoot_cmd.friction_status==1))
+    else if(km.v_sta == KEY_PRESS_ONCE || rc_now->wheel<=-600 &&(shoot_cmd.friction_status==1))
     {
         trigger_flag=1;
         shoot_cmd.ctrl_mode=SHOOT_ONE;
@@ -560,6 +560,11 @@ static void remote_to_cmd_pc_DT7(void)
     //当V键松开时或拨轮恢复到0时，根据标志位判断状态
     else if(km.v_sta == KEY_RELEASE || rc_now->wheel ==0 && (shoot_cmd.friction_status==1))
     {
+        //当shoot线程反馈信息显示开火完成后，清零开火标志位（记得在shoot线程shoot_stop状态将反馈信息设置为SHOOT_WAITNG）
+        if(shoot_fdb.trigger_status == SHOOT_OK)
+        {
+            trigger_flag=0;
+        }
         //如果开火标志位等于0，不开火
         if(trigger_flag ==0)
         {
@@ -571,11 +576,7 @@ static void remote_to_cmd_pc_DT7(void)
         {
             shoot_cmd.ctrl_mode=SHOOT_ONE;
             shoot_cmd.trigger_status=TRIGGER_ON;
-            //当shoot线程反馈信息显示开火完成后，清零开火标志位（记得在shoot线程shoot_stop状态将反馈信息设置为SHOOT_WAITNG）
-            if(shoot_fdb.trigger_status == SHOOT_OK)
-            {
-                trigger_flag=0;
-            }
+
         }
     }
     else
@@ -584,14 +585,14 @@ static void remote_to_cmd_pc_DT7(void)
         shoot_cmd.shoot_freq=0;
     }
     /*-------------------------------------------------------------堵弹反转检测------------------------------------------------------------*/
-    if (shoot_fdb.trigger_motor_current>=16300||reverse_cnt!=0)/*M3508电机的堵转电流是2500*/
-    {
-        shoot_cmd.ctrl_mode=SHOOT_REVERSE;
-        if (reverse_cnt<120)
-            reverse_cnt++;
-        else
-            reverse_cnt=0;
-    }
+    // if (shoot_fdb.trigger_motor_current>=16300||reverse_cnt!=0)/*M3508电机的堵转电流是2500*/
+    // {
+    //     shoot_cmd.ctrl_mode=SHOOT_REVERSE;
+    //     if (reverse_cnt<120)
+    //         reverse_cnt++;
+    //     else
+    //         reverse_cnt=0;
+    // }
     // /*-----------------------------------------------------------舵机开盖关盖--------------------------------------------------------------*/
     // if(rc_now->kb.bit.R==1||rc_now->wheel<=-200)
     // {
