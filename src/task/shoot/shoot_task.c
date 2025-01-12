@@ -293,10 +293,10 @@ void shoot_task_entry(void* argument)
                 {
                     shoot_fdb.trigger_status=SHOOT_WAITING;
                 }
-                if(total_angle_flag == 0)
+                if(total_angle_flag == SHOOT_ANGLE_CONTINUE)
                 {
                     shoot_motor_ref[TRIGGER_MOTOR]= sht_motor[TRIGGER_MOTOR]->measure.total_angle;
-                    total_angle_flag=1;
+                    total_angle_flag=SHOOT_ANGLE_SINGLE;
                 }
                 if (shoot_cmd.trigger_status == TRIGGER_ON)
                 {
@@ -316,10 +316,10 @@ void shoot_task_entry(void* argument)
 
             case SHOOT_THREE:
                 /*从自动连发模式切换三连发及单发模式时，要继承总转子角度*/
-                if(total_angle_flag == 0)
+                if(total_angle_flag == SHOOT_ANGLE_CONTINUE)
                 {
                     shoot_motor_ref[TRIGGER_MOTOR]= sht_motor[TRIGGER_MOTOR]->measure.total_angle;
-                    total_angle_flag = 1;
+                    total_angle_flag = SHOOT_ANGLE_SINGLE;
                 }
                 if (shoot_cmd.trigger_status == TRIGGER_ON)
                 {
@@ -332,13 +332,16 @@ void shoot_task_entry(void* argument)
                 break;
 
             case SHOOT_COUNTINUE:
+                shoot_motor_ref[RIGHT_FRICTION] = 6000;//摩擦轮常转 实测最大转速为8800
+                shoot_motor_ref[MIDDLE_FRICTION] = 6000;
+                shoot_motor_ref[LEFT_FRICTION] = -6000;
                 shoot_motor_ref[TRIGGER_MOTOR] = shoot_cmd.shoot_freq;//自动模式的时候，只用速度环控制拨弹电机
-                total_angle_flag = 0;
+                total_angle_flag = SHOOT_ANGLE_CONTINUE;
                 shoot_fdb.trigger_status= SHOOT_OK;
                 break;
 
             case SHOOT_REVERSE:
-                shoot_motor_ref[TRIGGER_MOTOR]=  -2500;
+                shoot_motor_ref[TRIGGER_MOTOR]= -2500;
                 total_angle_flag = 0;
                 break;
 

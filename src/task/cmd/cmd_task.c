@@ -585,14 +585,14 @@ static void remote_to_cmd_pc_DT7(void)
         shoot_cmd.shoot_freq=0;
     }
     /*-------------------------------------------------------------堵弹反转检测------------------------------------------------------------*/
-    // if (shoot_fdb.trigger_motor_current>=16300||reverse_cnt!=0)/*M3508电机的堵转电流是2500*/
-    // {
-    //     shoot_cmd.ctrl_mode=SHOOT_REVERSE;
-    //     if (reverse_cnt<120)
-    //         reverse_cnt++;
-    //     else
-    //         reverse_cnt=0;
-    // }
+    if (shoot_fdb.trigger_motor_current>=16300||reverse_cnt!=0)/*M3508电机的堵转电流是2500*/
+    {
+        shoot_cmd.ctrl_mode=SHOOT_REVERSE;
+        if (reverse_cnt<200)
+            reverse_cnt++;
+        else
+            reverse_cnt=0;
+    }
     // /*-----------------------------------------------------------舵机开盖关盖--------------------------------------------------------------*/
     // if(rc_now->kb.bit.R==1||rc_now->wheel<=-200)
     // {
