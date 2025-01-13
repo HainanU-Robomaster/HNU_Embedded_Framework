@@ -37,6 +37,8 @@ static void cmd_sub_pull(void);
 static int trigger_flag=0;
 /*舵机控制倍镜旋转标志位*/
 static int mirror_servo_flag=0;
+/*装弹标志位*/
+static int fill_flag=0;
 /*自瞄鼠标累计操作值*/
 static float mouse_accumulate_x=0;
 static float mouse_accumulate_y=0;
@@ -525,10 +527,11 @@ static void remote_to_cmd_pc_DT7(void)
         shoot_cmd.friction_status=0;
     }
     /*!------------------------------------------------------------扳机连发模式---------------------------------------------------------*/
-    if((rc_now->mouse.l==1||rc_now->wheel>=200)&&(shoot_cmd.friction_status==1)/*&&(referee_fdb.power_heat_data.shooter_17mm_1_barrel_heat < (referee_fdb.robot_status.shooter_barrel_heat_limit-10))*/)
-    {
-        shoot_cmd.ctrl_mode=SHOOT_COUNTINUE;
-        shoot_cmd.shoot_freq=3000;
+    //英雄取消连发模式
+    // if((rc_now->mouse.l==1||rc_now->wheel>=200)&&(shoot_cmd.friction_status==1)/*&&(referee_fdb.power_heat_data.shooter_17mm_1_barrel_heat < (referee_fdb.robot_status.shooter_barrel_heat_limit-10))*/)
+    // {
+    //     shoot_cmd.ctrl_mode=SHOOT_COUNTINUE;
+    //     shoot_cmd.shoot_freq=3000;
 
 //        if(((int16_t)referee_fdb.robot_status.shooter_barrel_heat_limit-(int16_t)referee_fdb.power_heat_data.shooter_17mm_1_barrel_heat)<=30)
 //        {
@@ -548,17 +551,16 @@ static void remote_to_cmd_pc_DT7(void)
 //        {
 //
 //        }
-
-    }
-    //开启摩擦轮默认进入单发模式,首先判断V键是否按下或者拨轮是否向上，标记开火标志位
-    else if(km.v_sta == KEY_PRESS_ONCE || rc_now->wheel<=-600 &&(shoot_cmd.friction_status==1))
+    // }
+    //开启摩擦轮默认进入单发模式,首先判断鼠标左键键是否按下或者拨轮是否向下，标记开火标志位
+    if(km.lk_sta == KEY_PRESS_ONCE || rc_now->wheel>=400 &&(shoot_cmd.friction_status==1))
     {
         trigger_flag=1;
         shoot_cmd.ctrl_mode=SHOOT_ONE;
         shoot_cmd.trigger_status=TRIGGER_OFF;
     }
     //当V键松开时或拨轮恢复到0时，根据标志位判断状态
-    else if(km.v_sta == KEY_RELEASE || rc_now->wheel ==0 && (shoot_cmd.friction_status==1))
+    else if(km.lk_sta == KEY_RELEASE || rc_now->wheel ==0 && (shoot_cmd.friction_status==1))
     {
         //当shoot线程反馈信息显示开火完成后，清零开火标志位（记得在shoot线程shoot_stop状态将反馈信息设置为SHOOT_WAITNG）
         if(shoot_fdb.trigger_status == SHOOT_OK)
@@ -576,7 +578,6 @@ static void remote_to_cmd_pc_DT7(void)
         {
             shoot_cmd.ctrl_mode=SHOOT_ONE;
             shoot_cmd.trigger_status=TRIGGER_ON;
-
         }
     }
     else
@@ -593,6 +594,26 @@ static void remote_to_cmd_pc_DT7(void)
         else
             reverse_cnt=0;
     }
+    //当摩擦轮未开始时，向下拨轮进行上弹,当堵弹时表示上弹完成，清零标志位
+    if(rc_now->wheel>=400 &&(shoot_cmd.friction_status==0) && fill_flag == 0)
+    {
+        shoot_cmd.ctrl_mode=SHOOT_COUNTINUE;
+        shoot_cmd.shoot_freq=3000;
+        if(shoot_fdb.trigger_motor_current>=16300)
+        {
+            shoot_cmd.ctrl_mode=SHOOT_STOP;
+            fill_flag = 1;
+        }
+    }
+    //如果第一次上弹完成后，需要长时间保持拨轮向下，才会清空标志位，重新上弹
+    else if (rc_now->wheel>=400 &&(shoot_cmd.friction_status==0) && fill_flag >= 1)
+    {
+        fill_flag++;
+        if(fill_flag>=10000)
+        {
+            fill_flag = 0;
+        }
+    }
     // /*-----------------------------------------------------------舵机开盖关盖--------------------------------------------------------------*/
     // if(rc_now->kb.bit.R==1||rc_now->wheel<=-200)
     // {
@@ -604,12 +625,12 @@ static void remote_to_cmd_pc_DT7(void)
     // }
     /*-----------------------------------------------------------倍镜舵机控制--------------------------------------------------------------*/
     //在未开启摩擦轮时，向上拨轮选择是否旋转倍镜
-    if(rc_now->kb.bit.R==1||rc_now->wheel <= -600 && shoot_cmd.friction_status==0)
+    if(rc_now->kb.bit.R==1||rc_now->wheel <= -600)
     {
         mirror_servo_flag = 1;//旋转倍镜标志位
     }
     //当拨轮恢复到0时，根据旋转倍镜标志位判断是否旋转倍镜
-    else if(rc_now->wheel == 0 && mirror_servo_flag==1 && shoot_cmd.friction_status==0)
+    else if(rc_now->wheel == 0 && mirror_servo_flag==1)
     {
         mirror_servo_flag = 0;
         if(shoot_cmd.mirror_enable==1)

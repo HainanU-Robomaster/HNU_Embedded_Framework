@@ -104,9 +104,9 @@
 
 /* --------------------------------- 底盘PID参数 -------------------------------- */
 /* 电机速度环 */
-#define CHASSIS_KP_V_MOTOR              7.5
-#define CHASSIS_KI_V_MOTOR              0.00165
-#define CHASSIS_KD_V_MOTOR              0.0001
+#define CHASSIS_KP_V_MOTOR              4
+#define CHASSIS_KI_V_MOTOR              0
+#define CHASSIS_KD_V_MOTOR              0.09f
 #define CHASSIS_INTEGRAL_V_MOTOR        2000
 #define CHASSIS_MAX_V_MOTOR             16000
 // TODO: 参数待整定
@@ -141,7 +141,7 @@
 /* 云台控制周期 (ms) */
 #define GIMBAL_PERIOD 1
 /* 云台回中初始化时间 (ms) */
-#define BACK_CENTER_TIME 100
+#define BACK_CENTER_TIME 500
 
 /* -------------------------------- 云台电机PID参数 ------------------------------- */
 /* 云台yaw轴电机PID参数 */
@@ -154,7 +154,7 @@
 /* imu角度环 */
 #define YAW_KP_A_IMU             0.15f   //降低响应速度减小超调以提升稳定性
 #define YAW_KI_A_IMU             0
-#define YAW_KD_A_IMU             0.001f
+#define YAW_KD_A_IMU             0.0001f
 #define YAW_INTEGRAL_A_IMU       0
 #define YAW_MAX_A_IMU            25
 /* auto速度环 */

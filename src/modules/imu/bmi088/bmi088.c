@@ -157,7 +157,7 @@ float accel_scale;          // 根据标定结果校准加速度计标度因数
 #define GxOFFSET  0.00000595966f//0.00000110679f
 #define GyOFFSET  0.0000157505f//-0.00000229872f
 #define GzOFFSET -0.000111956f//-0.00000085138f
-#define gNORM 9.809992958f//9.744925f
+#define gNORM 9.8100009322940157f//9.744925f
 
 /* Re-implement this function to define customized rotation */
 __attribute__((weak)) void bmi088_gyro_rotate_to_frd(float* data)
