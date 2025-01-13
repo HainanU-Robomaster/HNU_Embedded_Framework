@@ -104,9 +104,9 @@
 
 /* --------------------------------- 底盘PID参数 -------------------------------- */
 /* 电机速度环 */
-#define CHASSIS_KP_V_MOTOR              7.5
-#define CHASSIS_KI_V_MOTOR              0.165
-#define CHASSIS_KD_V_MOTOR              0.0000
+#define CHASSIS_KP_V_MOTOR              4
+#define CHASSIS_KI_V_MOTOR              0
+#define CHASSIS_KD_V_MOTOR              0.09f
 #define CHASSIS_INTEGRAL_V_MOTOR        2000
 #define CHASSIS_MAX_V_MOTOR             16000
 // TODO: 参数待整定
@@ -127,21 +127,21 @@
 #define SIDEWAYS_ANGLE   36
 #define CENTER_ECD_YAW   3818         //云台yaw轴编码器归中值(侧身)
 #else
-#define CENTER_ECD_YAW   5262         //云台yaw轴编码器归中值
+#define CENTER_ECD_YAW   5434         //云台yaw轴编码器归中值
 #define SIDEWAYS_ANGLE   0
 #endif
 
 
 #define CENTER_ECD_PITCH 3433         //云台pitch轴编码器归中值
 /* pitch轴最大仰角 */
-#define PIT_ANGLE_MAX        15.5f
+#define PIT_ANGLE_MAX        40.0f
 /* pitch轴最大俯角 */
 #define PIT_ANGLE_MIN        -15.0f
 
 /* 云台控制周期 (ms) */
 #define GIMBAL_PERIOD 1
 /* 云台回中初始化时间 (ms) */
-#define BACK_CENTER_TIME 100
+#define BACK_CENTER_TIME 500
 
 /* -------------------------------- 云台电机PID参数 ------------------------------- */
 /* 云台yaw轴电机PID参数 */
@@ -154,7 +154,7 @@
 /* imu角度环 */
 #define YAW_KP_A_IMU             0.15f   //降低响应速度减小超调以提升稳定性
 #define YAW_KI_A_IMU             0
-#define YAW_KD_A_IMU             0.001f
+#define YAW_KD_A_IMU             0.0001f
 #define YAW_INTEGRAL_A_IMU       0
 #define YAW_MAX_A_IMU            25
 /* auto速度环 */
@@ -172,14 +172,14 @@
 
 /* 云台PITCH轴电机PID参数 */
 /* imu速度环 */
-#define PITCH_KP_V_IMU           3000//8000
-#define PITCH_KI_V_IMU           1500
+#define PITCH_KP_V_IMU           2000//8000
+#define PITCH_KI_V_IMU           1000
 #define PITCH_KD_V_IMU           0.001
 #define PITCH_INTEGRAL_V_IMU     1500
 #define PITCH_MAX_V_IMU          30000
 
 /* imu角度环 */
-#define PITCH_KP_A_IMU           0.30f
+#define PITCH_KP_A_IMU           0.25f
 #define PITCH_KI_A_IMU           0.0f
 #define PITCH_KD_A_IMU           0.0001f
 #define PITCH_INTEGRAL_A_IMU     0.0f
@@ -206,7 +206,7 @@
 #define TRIGGER_MOTOR_ID  0x204 //0x205
 
 
-#define TRIGGER_MOTOR_51_TO_ANGLE 51.43f
+#define TRIGGER_MOTOR_51_TO_ANGLE 52.0f //实测52度最合适，使用积分可能导致突然打弹，便于抵消阻力
 /* -------------------------------- 发射电机PID参数 ------------------------------- */
 // TODO: 速度期望应改为变量应对速度切换。初次参数调整已完成
 /* 右摩擦轮M3508电机PID参数 */
@@ -243,7 +243,7 @@
 #define TRIGGER_MAX_V          20000
 /* 角度环 */
 #define TRIGGER_KP_A           5
-#define TRIGGER_KI_A           0.1
+#define TRIGGER_KI_A           0
 #define TRIGGER_KD_A           0.01
 #define TRIGGER_INTEGRAL_A     0
 #define TRIGGER_MAX_A          10000

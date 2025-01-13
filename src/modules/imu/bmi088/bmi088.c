@@ -154,10 +154,10 @@ static uint8_t cali_count;  // 校准次数
 float bmi088_g_norm;        // 通过校准得出的重力加速度
 float accel_scale;          // 根据标定结果校准加速度计标度因数
 // 需定期校准后手动修改
-#define GxOFFSET  0.00000110679f
-#define GyOFFSET -0.00000229872f
-#define GzOFFSET -0.00000085138f
-#define gNORM 9.744925f
+#define GxOFFSET  0.00000595966f//0.00000110679f
+#define GyOFFSET  0.0000157505f//-0.00000229872f
+#define GzOFFSET -0.000111956f//-0.00000085138f
+#define gNORM 9.8100009322940157f//9.744925f
 
 /* Re-implement this function to define customized rotation */
 __attribute__((weak)) void bmi088_gyro_rotate_to_frd(float* data)
