@@ -7,7 +7,7 @@
 #include <rtdbg.h>
 
 static float motor_dt;
-
+static int motor_cnt;
 void motor_thread_entry(void *argument)
 {
     static float motor_start;
@@ -21,6 +21,8 @@ void motor_thread_entry(void *argument)
         // static uint8_t cnt = 0; 设定不同电机的任务频率
         // if(cnt%5==0) //200hz
         // if(cnt%10==0) //100hz
+            motor_cnt++;
+        motor_cnt%=1000;
 #ifdef BSP_USING_DJI_MOTOR
         dji_motor_control();
 #endif /* BSP_USING_DJI_MOTOR */

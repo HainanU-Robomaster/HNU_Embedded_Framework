@@ -14,6 +14,8 @@
 #define DBG_LVL DBG_INFO
 #include <rtdbg.h>
 
+static int debug_ref1,debug_ref2;
+static int debug_mode;
 /* -------------------------------- 线程间通讯话题相关 ------------------------------- */
 static struct shoot_cmd_msg shoot_cmd;
 static struct shoot_fdb_msg shoot_fdb;
@@ -26,23 +28,25 @@ static void shoot_sub_init(void);
 static void shoot_pub_push(void);
 static void shoot_sub_pull(void);
 /* -------------------------------- 线程间通讯话题相关 ------------------------------- */
-
+static int shoot_cnt;
+static int shoot_flag;
 /*发射模块电机使用数量*/
-#define SHT_MOTOR_NUM 4//摩擦轮目前是四个，之后要改成六个,外加拨弹电机，总共是7
+// #define SHT_MOTOR_NUM 3
+#define SHT_MOTOR_NUM 4
 
-/*发射模块电机编号*/
 #define SHOOT_MOTOR1 0
 #define SHOOT_MOTOR2 1
 #define SHOOT_MOTOR3 2
 #define SHOOT_MOTOR4 3
-// #define SHOOT5_MOTOR 4
-// #define SHOOT6_MOTOR 5
-#define LOAD_MOTOR 6//GM2006供弹
-//准备用两个宏定义作为初始值和目标值，总角度达到目标值就停止转动（完成发射）
+
+#define LOAD_MOTOR 4
+// #define LOAD_MOTOR 6//GM2006供弹
+
 
 /*pid环数结构体*/
 static struct shoot_controller_t{
     pid_obj_t *pid_speed;
+    pid_obj_t *pid_angle;
 }sht_controller[SHT_MOTOR_NUM];
 static struct load_controller_t{
     pid_obj_t *pid_speed;
@@ -70,11 +74,11 @@ motor_config_t shoot_motor_config[SHT_MOTOR_NUM] ={
         .controller = &sht_controller[SHOOT_MOTOR3],
     },
     {
-    .motor_type = M3508,
-    .can_name = CAN_CHASSIS,
-    .rx_id = SHOOT4_MOTOR_ID,
-    .controller = &sht_controller[SHOOT_MOTOR4],
-    }
+        .motor_type = M3508,
+        .can_name = CAN_CHASSIS,
+        .rx_id = SHOOT4_MOTOR_ID,
+        .controller = &sht_controller[SHOOT_MOTOR4],
+        },
 };
 motor_config_t load_motor_config ={
     .motor_type = M3508,
@@ -82,10 +86,8 @@ motor_config_t load_motor_config ={
     .rx_id = LOAD_MOTOR_ID,
     .controller = &load_controller
 };
-
 static dji_motor_object_t *sht_motor[SHT_MOTOR_NUM];  // 发射器电机实例
-
-static float shoot_motor_ref[SHT_MOTOR_NUM]; // shoot电机控制期望值
+static float shoot_motor_ref[SHT_MOTOR_NUM]; // 电机控制期望值
 static dji_motor_object_t *load_motor;//供弹电机实例
 static float load_ref_rpm, load_ref_distance;//供弹电机控制期望值
 /*函数声明*/
@@ -99,7 +101,6 @@ static rt_int16_t load_control(dji_motor_measure_t measure);
 static float sht_dt;
 static int ref_rpm_1;//motor 0 1 一级
 static int ref_rpm_2;//motor 2 3 二级
-// static int ref_load = 1000;
 /**
  * @brief shoot线程入口函数
  */
@@ -112,13 +113,8 @@ void shoot_task_entry(void* argument)
     shoot_sub_init();
 
 /*----------------------射击状态初始化----------------------------------*/
-    shoot_cmd.ctrl_mode = SHOOT_STOP;
+    shoot_cmd.ctrl_mode=SHOOT_STOP;
     shoot_cmd.friction_status = 0;
-    for(int i=0;i < SHT_MOTOR_NUM; i++) {
-        shoot_motor_ref[i] = 0;
-    }
-    /*load motor not singed up*/
-    // load_motor_ref = 0;
     LOG_I("Shoot Task Start");
     for (;;)
     {
@@ -126,78 +122,75 @@ void shoot_task_entry(void* argument)
         /* 更新该线程所有的订阅者 */
         shoot_sub_pull();
 
+        shoot_cnt++;
+        shoot_cnt%=1000;
+
         /* 电机控制启动 */
         for (uint8_t i = 0; i < SHT_MOTOR_NUM; i++)
         {
             dji_motor_enable(sht_motor[i]);
+            dji_motor_enable(load_motor);
         }
-
          // shoot_fdb.trigger_motor_current=sht_motor[TRIGGER_MOTOR]->measure.real_current;
-        /*控制模式判断*/
+
         /*subs遥控器*/
-#ifdef BSP_USING_RC_SBUS
+
         switch (shoot_cmd.ctrl_mode)
         {
             case SHOOT_STOP:
                 for(int i=0;i<SHT_MOTOR_NUM;i++) {
                     shoot_motor_ref[i] = 0;
                 }
-                // load_ref_rpm = -1000;//拨弹电机下行
-                load_ref_distance = LOAD_INIT_DISTANCE;
-                if(load_motor->measure.total_round <= 10) {
-                    shoot_fdb.load_status == LOAD_BACK_OK;
-                }else {
-                    shoot_fdb.load_status == LOAD_BACK_ON;
-                }
-
+                load_ref_rpm = 0;
                 break;
 
             case SHOOT_ONE:
                 if(shoot_cmd.friction_speed == HIGH_FREQUENCY) {
                     ref_rpm_1 = 9000;
-                    ref_rpm_2 = 9000;
+                    ref_rpm_2 = 7000;
                 }else if(shoot_cmd.friction_speed == LOW_FREQUENCY) {
-                    ref_rpm_1 = 6000;
-                    ref_rpm_2 = 6000;
+                    /*是否改成宏定义在menuconfig里？*/
+                    if(!debug_mode) {
+                        ref_rpm_1 = 5500;
+                        ref_rpm_2 = 7000;
+                    }else if(debug_mode == 0){
+                        ref_rpm_1 = debug_ref1;
+                        ref_rpm_2 = debug_ref2;
+                    }
                 }
-
                 shoot_motor_ref[SHOOT_MOTOR1] = -ref_rpm_1 ;//摩擦轮常转
                 shoot_motor_ref[SHOOT_MOTOR2] = ref_rpm_1;
                 shoot_motor_ref[SHOOT_MOTOR3] = -ref_rpm_2;//摩擦轮常转
                 shoot_motor_ref[SHOOT_MOTOR4] = ref_rpm_2;
-                load_ref_rpm = 5000;//拨弹电机上行
-                load_ref_distance = LOAD_MAX_DISTANCE;
-
-                shoot_fdb.load_status = LOADING;
+                load_ref_rpm = 0;//拨弹电机上行
+                // shoot_fdb.trigger_status=SHOOT_OK;
                 break;
             case SHOOT_REVERSE:
                 for(int i=0;i<SHT_MOTOR_NUM;i++) {
                     shoot_motor_ref[i] = 0;
                 }
-                load_ref_rpm = -1000;//拨弹电机下行
-                load_ref_distance = 0;
-                if(load_motor->measure.total_round <= 10) {
-                    shoot_fdb.load_status == LOAD_BACK_OK;
-                }else {
-                    shoot_fdb.load_status == LOAD_BACK_ON;
-                }
-            break;
-
+                load_ref_rpm = -4000;//拨弹电机下行,要改成角度环
+                // if(load_motor->measure.total_round <= 10) {
+                //     shoot_fdb.load_status == LOAD_BACK_OK;
+                // }else {
+                //     shoot_fdb.load_status == LOAD_BACK_ON;
+                // }
+                break;
             default:
                 for (uint8_t i = 0; i < SHT_MOTOR_NUM; i++)
                 {
                     dji_motor_relax(sht_motor[i]); // 错误情况电机全部松电
+                    dji_motor_enable(load_motor);
                 }
+            dji_motor_relax(load_motor);
                 shoot_fdb.trigger_status=SHOOT_ERR;
                 break;
         }
-#endif
+
+
 
         /* 更新发布该线程的msg */
         shoot_pub_push();
-
-        //TODO:单独调试shoot模块时打开，用于更新上个模式
-        //shoot_cmd.last_mode=shoot_cmd.ctrl_mode;
 
         /* 用于调试监测线程调度使用 */
         sht_dt = dwt_get_time_ms() - sht_start;
@@ -207,19 +200,20 @@ void shoot_task_entry(void* argument)
     }
 }
 
+
 /**
  * @brief shoot 线程电机初始化
  */
 static void shoot_motor_init(){
-    /* -------------------------------------- 摩擦轮电机1----------------------------------------- */
-    pid_config_t shoot1_speed_config = INIT_PID_CONFIG(RIGHT_KP_V, RIGHT_KI_V, RIGHT_KD_V,RIGHT_INTEGRAL_V,RIGHT_MAX_V,
+    /* -------------------------------------- 电机1 ----------------------------------------- */
+    pid_config_t right_speed_config = INIT_PID_CONFIG(RIGHT_KP_V, RIGHT_KI_V, RIGHT_KD_V,RIGHT_INTEGRAL_V,RIGHT_MAX_V,
                                                         (PID_Trapezoid_Intergral | PID_Integral_Limit | PID_Derivative_On_Measurement));
-    sht_controller[SHOOT_MOTOR1].pid_speed = pid_register(& shoot1_speed_config);
+    sht_controller[SHOOT_MOTOR1].pid_speed = pid_register(& right_speed_config);
 
-/* ------------------------------------------- 摩擦轮电机2------------------------------------------------- */
-    pid_config_t shoot2_speed_config = INIT_PID_CONFIG(LEFT_KP_V,  LEFT_KI_V, LEFT_KD_V , LEFT_INTEGRAL_V, LEFT_MAX_V,
+/* ------------------------------------------- 电机2------------------------------------------------- */
+    pid_config_t left_speed_config = INIT_PID_CONFIG(LEFT_KP_V,  LEFT_KI_V, LEFT_KD_V , LEFT_INTEGRAL_V, LEFT_MAX_V,
                                                           (PID_Trapezoid_Intergral | PID_Integral_Limit | PID_Derivative_On_Measurement));
-    sht_controller[SHOOT_MOTOR2].pid_speed = pid_register(&shoot2_speed_config);
+    sht_controller[SHOOT_MOTOR2].pid_speed = pid_register(&left_speed_config);
 /* ------------------------------------------- 摩擦轮电机3------------------------------------------------- */
 pid_config_t shoot3_speed_config = INIT_PID_CONFIG(LEFT_KP_V,  LEFT_KI_V, LEFT_KD_V , LEFT_INTEGRAL_V, LEFT_MAX_V,
                                                       (PID_Trapezoid_Intergral | PID_Integral_Limit | PID_Derivative_On_Measurement));
@@ -228,35 +222,35 @@ sht_controller[SHOOT_MOTOR3].pid_speed = pid_register(&shoot3_speed_config);
 pid_config_t shoot4_speed_config = INIT_PID_CONFIG(LEFT_KP_V,  LEFT_KI_V, LEFT_KD_V , LEFT_INTEGRAL_V, LEFT_MAX_V,
                                                       (PID_Trapezoid_Intergral | PID_Integral_Limit | PID_Derivative_On_Measurement));
 sht_controller[SHOOT_MOTOR4].pid_speed = pid_register(&shoot4_speed_config);
-
-/* ------------------------------------------------  供弹电机------------------------------------------------------------------------- */
+/* ------------------------------------------------  拨弹电机------------------------------------------------------------------------- */
     pid_config_t load_speed_config = INIT_PID_CONFIG(TRIGGER_KP_V  , TRIGGER_KI_V , TRIGGER_KD_V  , TRIGGER_INTEGRAL_V, TRIGGER_MAX_V ,
                                                        (PID_Trapezoid_Intergral | PID_Integral_Limit | PID_Derivative_On_Measurement));
-    pid_config_t load_angle_config = INIT_PID_CONFIG(TRIGGER_KP_A, TRIGGER_KI_A, TRIGGER_KD_A, TRIGGER_INTEGRAL_A , TRIGGER_MAX_A ,
-                                                       (PID_Trapezoid_Intergral | PID_Integral_Limit | PID_Derivative_On_Measurement));
+    // pid_config_t load_angle_config = INIT_PID_CONFIG(TRIGGER_KP_A, TRIGGER_KI_A, TRIGGER_KD_A, TRIGGER_INTEGRAL_A , TRIGGER_MAX_A ,
+    //                                                    (PID_Trapezoid_Intergral | PID_Integral_Limit | PID_Derivative_On_Measurement));
     load_controller.pid_speed = pid_register(&load_speed_config);
-    load_controller.pid_angle = pid_register(&load_angle_config);
+    // load_controller.pid_angle = pid_register(&load_angle_config);
 
 /* ---------------------------------- shoot电机初注册---------------------------------------------------------------------------------------- */
     sht_motor[SHOOT_MOTOR1] = dji_motor_register(&shoot_motor_config[SHOOT_MOTOR1], shoot_control_1);
     sht_motor[SHOOT_MOTOR2] = dji_motor_register(&shoot_motor_config[SHOOT_MOTOR2], shoot_control_2);
     sht_motor[SHOOT_MOTOR3] = dji_motor_register(&shoot_motor_config[SHOOT_MOTOR3], shoot_control_3);
-    sht_motor[SHOOT_MOTOR4] = dji_motor_register(&shoot_motor_config[SHOOT_MOTOR3], shoot_control_4);
+    sht_motor[SHOOT_MOTOR4] = dji_motor_register(&shoot_motor_config[SHOOT_MOTOR4], shoot_control_4);
+    load_motor = dji_motor_register(&load_motor_config,load_control);
 
-    load_motor = dji_motor_register(&load_motor_config,load_motor);
 }
 
-/* ---------------------------------- shoot电机控制算法---------------------------------------------------------------------------------------- */
+/*右摩擦轮电机控制算法*/
 static rt_int16_t shoot_control_1(dji_motor_measure_t measure)
 {
     static rt_int16_t set = 0;
     set =(int16_t) pid_calculate(sht_controller[SHOOT_MOTOR1].pid_speed, measure.speed_rpm, shoot_motor_ref[SHOOT_MOTOR1]);
     return set;
 }
+/*右摩擦轮电机控制算法*/
 static rt_int16_t shoot_control_2(dji_motor_measure_t measure)
 {
     static rt_int16_t set = 0;
-    set = (int16_t) pid_calculate(sht_controller[SHOOT_MOTOR2].pid_speed, measure.speed_rpm, shoot_motor_ref[SHOOT_MOTOR2]);
+    set = (int16_t) pid_calculate(sht_controller[SHOOT_MOTOR2].pid_speed, measure.speed_rpm, shoot_motor_ref[SHOOT_MOTOR2]/*left_speed*/);
     return set;
 }
 static rt_int16_t shoot_control_3(dji_motor_measure_t measure)
@@ -271,44 +265,12 @@ static rt_int16_t shoot_control_4(dji_motor_measure_t measure)
     set = (int16_t) pid_calculate(sht_controller[SHOOT_MOTOR4].pid_speed, measure.speed_rpm, shoot_motor_ref[SHOOT_MOTOR4]);
     return set;
 }
-
-/*拨弹电机控制算法*/
-static rt_int16_t load_motor_control(dji_motor_measure_t measure)
+static rt_int16_t load_control(dji_motor_measure_t measure)
 {
-    /* PID局部指针，切换不同模式下PID控制器 */
-    static pid_obj_t *pid_location;
-    static pid_obj_t *pid_speed;
-    static float get_speed, get_location;  // 闭环反馈量
-    static float pid_out_location;         // 角度环输出
-    static rt_int16_t send_data;        // 最终发送给电调的数据
-
-    /*拨弹电机采用串级pid，一个角度环和一个速度环*/
-    pid_speed = load_controller.pid_speed;
-    pid_location = load_controller.pid_angle;
-    get_location = measure.total_angle * PITCH_GEAR_RATIO * ANGLE_TO_DISTANCE;//load也是2006，减速比同PITCH
-    get_speed = measure.speed_rpm;
-
-    /* 切换模式需要清空控制器历史状态 */
-    if(shoot_cmd.ctrl_mode != shoot_cmd.last_mode)
-    {
-        pid_clear(pid_location);
-        pid_clear(pid_speed);
-    }
-
-    /*pid计算输出*/
-    if (shoot_cmd.ctrl_mode==SHOOT_ONE) //非连发模式的时候，用双环pid控制拨弹电机
-    {
-        pid_out_location = (int16_t) pid_calculate(pid_location, get_location, load_ref_distance);
-        send_data = (int16_t) pid_calculate(pid_speed, get_speed, pid_out_location);
-    }
-    /*pid计算输出*/
-    else if(shoot_cmd.ctrl_mode==SHOOT_STOP||shoot_cmd.ctrl_mode==SHOOT_REVERSE)//自动模式的时候，只用速度环控制拨弹电机
-    {
-        send_data = (int16_t) pid_calculate(pid_speed, get_speed, load_ref_rpm);
-    }
-    return send_data;
+    static rt_int16_t set = 0;
+    set = (int16_t) pid_calculate(load_controller.pid_speed, measure.speed_rpm, load_ref_rpm);
+    return set;
 }
-
 /**
  * @brief shoot 线程中所有发布者初始化
  */

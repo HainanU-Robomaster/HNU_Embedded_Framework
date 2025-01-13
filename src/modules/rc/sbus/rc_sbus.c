@@ -10,7 +10,7 @@
 #include "rm_config.h"
 #include "libraries/STM32F4xx_HAL/CMSIS/Device/ST/STM32F4xx/Include/stm32f4xx.h"
 
-#define DBG_TAG "rc.sbus"
+#define DBG_TAG           "rc.sbus"
 #define DBG_LVL DBG_INFO
 #include "rt-thread/include/rtdbg.h"
 

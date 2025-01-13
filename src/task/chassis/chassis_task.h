@@ -6,21 +6,11 @@
 #ifndef _CHASSIS_TASK_H
 #define _CHASSIS_TASK_H
 
-#define YAW_MOTOR 0
-#define PITCH_MOTOR 1
-
-#define PITCH_INIT_ANGLE 10//to be determined
-#define YAW_INIT_ANGLE 0//to be determined
-// #define X_INIT
-// #define Y_INIT
-
 #include <rtthread.h>
 
 /**
  * @brief 底盘模式
  */
-
-
 typedef enum
 {
     CHASSIS_INIT,           //底盘初始化

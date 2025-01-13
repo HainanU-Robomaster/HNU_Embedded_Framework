@@ -122,7 +122,6 @@ void _Error_Handler(char *s, int num)
     LOG_E("Error_Handler at file:%s num:%d", s, num);
     while (1)
     {
-        rt_kprintf("%s,%d",s,num);
     }
     /* USER CODE END Error_Handler */
 }
