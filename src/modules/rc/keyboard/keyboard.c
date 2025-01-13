@@ -9,7 +9,7 @@
 
 km_control_t km;
 
-int16_t delta_spd = MAX_CHASSIS_VX_SPEED*1.0f/KEY_ACC_TIME*GIMBAL_PERIOD;
+// int16_t delta_spd = MAX_CHASSIS_VX_SPEED*1.0f/KEY_ACC_TIME*GIMBAL_PERIOD;
 
 extern ramp_obj_t *km_vx_ramp;//x轴控制斜坡
 extern ramp_obj_t *km_vy_ramp;//y周控制斜坡
@@ -92,40 +92,40 @@ static void key_fsm(kb_state_e *sta, uint8_t key)
   */
 void PC_Handle_kb(void)
 {
-    if (rc_dbus_obj[0].kb.bit.SHIFT)
-    {
-        km.move_mode = FAST_MODE;
-        km.max_spd = 3500;
-    }
-    else if (rc_dbus_obj[0].kb.bit.CTRL)
-    {
-        km.move_mode = SLOW_MODE;
-        km.max_spd = 1000;
-    }
-    else
-    {
-        km.move_mode = NORMAL_MODE;
-        km.max_spd = 2000;
-    }
+    // if (rc_dbus_obj[0].kb.bit.SHIFT)
+    // {
+    //     km.move_mode = FAST_MODE;
+    //     km.max_spd = 3500;
+    // }
+    // else if (rc_dbus_obj[0].kb.bit.CTRL)
+    // {
+    //     km.move_mode = SLOW_MODE;
+    //     km.max_spd = 1000;
+    // }
+    // else
+    // {
+    //     km.move_mode = NORMAL_MODE;
+    //     km.max_spd = 2000;
+    // }
 
     //add ramp
-    if (rc_dbus_obj[0].kb.bit.W)
-        km.vy += (float)delta_spd;
-    else if (rc_dbus_obj[0].kb.bit.S)
-        km.vy -= (float)delta_spd;
-    else
-    {
-        km.vy =(float)km.vy* ( 1 - km_vy_ramp->calc(km_vy_ramp));
-    }
-
-    if (rc_dbus_obj[0].kb.bit.A)
-        km.vx -= (float)delta_spd;
-    else if (rc_dbus_obj[0].kb.bit.D)
-        km.vx += (float)delta_spd;
-    else
-    {
-        km.vx = (float) km.vx* ( 1 - km_vx_ramp->calc(km_vx_ramp));
-    }
+    // if (rc_dbus_obj[0].kb.bit.W)
+    //     km.vy += (float)delta_spd;
+    // else if (rc_dbus_obj[0].kb.bit.S)
+    //     km.vy -= (float)delta_spd;
+    // else
+    // {
+    //     km.vy =(float)km.vy* ( 1 - km_vy_ramp->calc(km_vy_ramp));
+    // }
+    //
+    // if (rc_dbus_obj[0].kb.bit.A)
+    //     km.vx -= (float)delta_spd;
+    // else if (rc_dbus_obj[0].kb.bit.D)
+    //     km.vx += (float)delta_spd;
+    // else
+    // {
+    //     km.vx = (float) km.vx* ( 1 - km_vx_ramp->calc(km_vx_ramp));
+    // }
 
     VAL_LIMIT(km.vx, -km.max_spd, km.max_spd);
     VAL_LIMIT(km.vy, -km.max_spd, km.max_spd);
@@ -146,14 +146,14 @@ void PC_Handle_kb(void)
 //        VAL_LIMIT(km.vy, -MAX_CHASSIS_VY_SPEED, MAX_CHASSIS_VY_SPEED);
 //    }
 
-    VAL_LIMIT(km.vx, -MAX_CHASSIS_VX_SPEED, MAX_CHASSIS_VX_SPEED);
-    VAL_LIMIT(km.vy, -MAX_CHASSIS_VY_SPEED, MAX_CHASSIS_VY_SPEED);
+    // VAL_LIMIT(km.vx, -MAX_CHASSIS_VX_SPEED, MAX_CHASSIS_VX_SPEED);
+    // VAL_LIMIT(km.vy, -MAX_CHASSIS_VY_SPEED, MAX_CHASSIS_VY_SPEED);
 
-    key_fsm(&km.lk_sta, rc_dbus_obj[0].mouse.l);
-    key_fsm(&km.rk_sta, rc_dbus_obj[0].mouse.r);
-    key_fsm(&km.e_sta, rc_dbus_obj[0].kb.bit.E);
-    key_fsm(&km.f_sta, rc_dbus_obj[0].kb.bit.F);
-    key_fsm(&km.shift_sta, rc_dbus_obj[0].kb.bit.SHIFT);
-    key_fsm(&km.ctrl_sta, rc_dbus_obj[0].kb.bit.CTRL);
-    key_fsm(&km.v_sta, rc_dbus_obj[0].kb.bit.V);
+    // key_fsm(&km.lk_sta, rc_dbus_obj[0].mouse.l);
+    // key_fsm(&km.rk_sta, rc_dbus_obj[0].mouse.r);
+    // key_fsm(&km.e_sta, rc_dbus_obj[0].kb.bit.E);
+    // key_fsm(&km.f_sta, rc_dbus_obj[0].kb.bit.F);
+    // key_fsm(&km.shift_sta, rc_dbus_obj[0].kb.bit.SHIFT);
+    // key_fsm(&km.ctrl_sta, rc_dbus_obj[0].kb.bit.CTRL);
+    // key_fsm(&km.v_sta, rc_dbus_obj[0].kb.bit.V);
 }

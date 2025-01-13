@@ -45,7 +45,8 @@ static RX_AgreementData     Referee_Data;                //实例化一个数据
 /* -------------------------------- 线程间通讯话题相关 ------------------------------- */
 static struct shoot_cmd_msg shoot_cmd;
 static struct shoot_fdb_msg shoot_fdb;
-// static publisher_t *pub_referee;
+// static struct referee_fdb_msg referee_fdb;
+static publisher_t *pub_referee;
 
 static void referee_pub_init(void);
 static void referee_sub_init(void);

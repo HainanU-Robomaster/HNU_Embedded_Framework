@@ -32,9 +32,5 @@
 #ifdef BSP_USING_RAMP
 #include "ramp.h"
 #endif /* BSP_USING_RAMP */
-#ifdef BSP_USING_RC_SBUS
-#include "modules/rc/sbus/rc_sbus.h"
-#endif
-
 
 #endif /* _RM_ALGORITHM_H */

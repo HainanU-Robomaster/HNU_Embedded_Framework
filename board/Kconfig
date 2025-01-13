@@ -303,9 +303,36 @@ menu "RoboMaster Modules"
     config BSP_USING_PS_MSG
         bool "Enable Pub Sub Message"
         default y
+
+    menuconfig BSP_USING_MAG
+        bool "Enable Magnetometer"
+        default y
+        if BSP_USING_MAG
+            config BSP_USING_IST8310
+                bool "Using IST8310"
+                default y
+        endif
+
+    menuconfig BSP_USING_IMU
+        bool "Enable IMU"
+        default y
+        if BSP_USING_IMU
+            config BSP_USING_BMI088
+                bool "Using BMI088"
+                default y
+                if BSP_USING_BMI088
+                    config BSP_BMI088_CALI
+                    bool "Calibrate BMI088 (Get more info in BMI088 README)"
+                    default n
+                endif
+        endif
     
     config BSP_USING_RC_SBUS
         bool "Enable RC SBUS"
+        default n
+
+    config BSP_USING_RC_DBUS
+        bool "Enable RC DBUS"
         default y
 
     config BSP_USING_RC_KEYBOARD
@@ -315,6 +342,10 @@ menu "RoboMaster Modules"
     config BSP_USING_REFEREE
         bool "Enable REFEREE"
         default y
+
+    config BSP_USING_LEG
+        bool "Enable Leg Solve"
+        default n
 
 endmenu
 
@@ -347,6 +378,9 @@ menu "RoboMaster Tasks"
         bool "Select USING Example Task"
         default n
 
+    config BSP_USING_INS_TASK
+        bool "Select USING Ins Task"
+        default y
 
     config BSP_USING_MOTOR_TASK
         bool "Select USING Motor Task"
@@ -367,10 +401,22 @@ menu "RoboMaster Tasks"
                 bool "Select Chassis Mecanum Mode"
                 default n
         endif
+    
+    config BSP_USING_GIMBAL_TASK
+        bool "Select USING Gimbal Task"
+        default y
+
+    config BSP_USING_TRANSMISSION_TASK
+        bool "Select USING Transmission Task"
+        default y
 
     config BSP_USING_SHOOT_TASK
         bool "Select USING Shoot Task"
         default y
+
+    config BSP_USING_REFEREE_TASK
+            bool "Select USING Referee Task"
+            default y
 
 endmenu
 

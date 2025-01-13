@@ -6,13 +6,12 @@
 #ifndef _CMD_TASK_H
 #define _CMD_TASK_H
 
-#define LOAD_VALUE 500//to be defined
 #include <rtthread.h>
-// typedef struct
-// {
-//     float num[3];
-//     float error[2];
-// }gim_auto_judge;
+typedef struct
+{
+    float num[3];
+    float error[2];
+}gim_auto_judge;
 void cmd_thread_entry(void *argument);
 
 #endif /* _CMD_TASK_H */
