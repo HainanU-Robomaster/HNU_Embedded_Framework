@@ -42,6 +42,7 @@ typedef enum
     M2006,
     HT04,
     MF9025,
+    GM6623
 } motor_type_e;
 
 /* 电机配置结构体 */

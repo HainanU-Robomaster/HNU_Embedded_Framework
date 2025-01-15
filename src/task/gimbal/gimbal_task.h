@@ -28,6 +28,14 @@ typedef enum
     BACK_IS_OK = 1,            //云台回中完毕
 } gimbal_back_e;
 
+/**
+  * @brief     自瞄相对角度传参
+  */
+typedef enum
+{
+    RELATIVE_ANGLE_TRANS = 0,             //云台正在回中
+    RELATIVE_ANGLE_OK = 1,            //云台回中完毕
+} auto_relative_angle_status_e;
 void gimbal_thread_entry(void *argument);
 
 #endif /* _GIMBAL_TASK_H */

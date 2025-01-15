@@ -40,6 +40,10 @@
 #ifdef BSP_USING_SHOOT_TASK
 #include "shoot_task.h"
 #endif /* BSP_USING_SHOOT_TASK */
+#ifdef BSP_USING_REFEREE_TASK
+#include "referee_task.h"
+#include "Referee_system.h"
+#endif /* BSP_USING_REFEREE_TASK */
 
 
 /* --------------------------------- 话题的数据格式 -------------------------------- */
@@ -92,6 +96,7 @@ struct shoot_cmd_msg
     // TODO: 添加发射弹速控制
     int16_t shoot_speed;     // 发射弹速
     uint8_t cover_open;      // 弹仓盖开关
+    rt_bool_t friction_status;
 };
 
 /* ------------------------------ gimbal反馈状态数据 ------------------------------ */
@@ -102,10 +107,21 @@ struct gimbal_fdb_msg
 {
     gimbal_back_e back_mode;  // 云台归中情况
 
+    float yaw_offset_angle_total;    //云台初始 yaw 轴角度 （由imu得）
     float yaw_offset_angle;    //云台初始 yaw 轴角度 （由imu得）
     float pit_offset_angle;    //云台初始 pit 轴角度 （由imu得）
     float yaw_relative_angle;  //云台相对于初始位置的yaw轴角度
 };
+
+/* ------------------------------ chassis反馈状态数据 ------------------------------ */
+/**
+ * @brief 底盘真实反馈状态数据,由chassis发布
+ */
+ struct chassis_fdb_msg
+ {
+     float x_pos_gim;
+     float y_pos_gim;
+ };
 
 /* ------------------------------ shoot反馈状态数据 ------------------------------ */
 /**
@@ -113,6 +129,29 @@ struct gimbal_fdb_msg
  */
 struct shoot_fdb_msg
 {
-    shoot_back_e shoot_mode;  // shoot状态反馈
+    shoot_back_e trigger_status;  // shoot状态反馈
+    int16_t trigger_motor_current; //拨弹电机电流，传给cmd控制反转
 };
+
+/* ------------------------------ transmission反馈状态数据 ------------------------------ */
+/**
+ * @brief 上位机反馈状态数据,由transmission发布
+ */
+ struct trans_fdb_msg
+ { // 云台自瞄角度控制
+     float yaw;
+     float pitch;
+     float roll;
+     rt_uint8_t heartbeat;
+ };
+
+ /* ------------------------------ referee反馈状态数据 ------------------------------ */
+/**
+ * @brief 上位机反馈状态数据,由referee发布
+ */
+ struct referee_fdb_msg
+ {
+     robot_status_t robot_status;
+     ext_power_heat_data_t power_heat_data;
+ };
 #endif /* _RM_TASK_H */
