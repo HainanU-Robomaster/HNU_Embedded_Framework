@@ -143,12 +143,12 @@
 #define CENTER_ECD_YAW   3818
 #else
 /* 云台yaw轴编码器归中值 */
-#define CENTER_ECD_YAW   7913
+#define CENTER_ECD_YAW   7802
 #define SIDEWAYS_ANGLE   0
 #endif
 
 /* 云台pitch轴编码器归中值 */
-#define CENTER_ECD_PITCH 2717
+#define CENTER_ECD_PITCH 7000
 /* pitch轴最大仰角 */
 #define PIT_ANGLE_MAX    30.0f
 /* pitch轴最大俯角 */
@@ -174,16 +174,16 @@
 #define YAW_INTEGRAL_A_IMU       0
 #define YAW_MAX_A_IMU            25
 /* auto速度环 */
-#define YAW_KP_V_AUTO            10000
-#define YAW_KI_V_AUTO            0.01
+#define YAW_KP_V_AUTO            7900
+#define YAW_KI_V_AUTO            0.45
 #define YAW_KD_V_AUTO            0.00
-#define YAW_INTEGRAL_V_AUTO      0
+#define YAW_INTEGRAL_V_AUTO      1500
 #define YAW_MAX_V_AUTO           30000
 /* auto角度环 */
 #define YAW_KP_A_AUTO            0.1
-#define YAW_KI_A_AUTO            0.001
-#define YAW_KD_A_AUTO            0.00f
-#define YAW_INTEGRAL_A_AUTO      0
+#define YAW_KI_A_AUTO            0.005
+#define YAW_KD_A_AUTO            0
+#define YAW_INTEGRAL_A_AUTO      5
 #define YAW_MAX_A_AUTO           25
 
 /* 云台PITCH轴电机PID参数 */
@@ -202,15 +202,15 @@
 #define PITCH_MAX_A_IMU          20
 
 /* auto速度环 */
-#define PITCH_KP_V_AUTO          2000
-#define PITCH_KI_V_AUTO          0.001
+#define PITCH_KP_V_AUTO          2200
+#define PITCH_KI_V_AUTO          0.85
 #define PITCH_KD_V_AUTO          0
 #define PITCH_INTEGRAL_V_AUTO    1500
 #define PITCH_MAX_V_AUTO         30000
 /* auto角度环 */
 #define PITCH_KP_A_AUTO          0.35
-#define PITCH_KI_A_AUTO          0.001
-#define PITCH_KD_A_AUTO          0.001
+#define PITCH_KI_A_AUTO          0.01
+#define PITCH_KD_A_AUTO          0.008
 #define PITCH_INTEGRAL_A_AUTO    0.0f
 #define PITCH_MAX_A_AUTO         20
 

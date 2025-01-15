@@ -137,7 +137,7 @@ void transmission_task_entry(void* argument)
 void Send_to_pc(RpyTypeDef data_r)
 {
     /*填充数据*/
-    pack_Rpy(&data_r, -(gim_fdb.yaw_offset_angle - ins_data.yaw), gim_fdb.pit_offset_angle-ins_data.pitch, openfire,team_color);
+    pack_Rpy(&data_r, (gim_fdb.yaw_offset_angle - ins_data.yaw), ins_data.pitch-gim_fdb.pit_offset_angle, openfire,team_color);
     Check_Rpy(&data_r);
 
     rt_device_write(vs_port, 0, (uint8_t*)&data_r, sizeof(data_r));
@@ -230,20 +230,15 @@ static rt_err_t usb_input(rt_device_t dev, rt_size_t size)
         switch (rpy_rx_data.ID) {
             case GIMBAL:{
                 if (rpy_rx_data.DATA[0]) {//相对角度控制
-                    trans_fdb.yaw =  (*(int32_t *) &rpy_rx_data.DATA[1] / 1000.0);
-                    trans_fdb.pitch =-(*(int32_t *) &rpy_rx_data.DATA[5] / 1000.0);
-                    if(openfire >= 0.98*180/3.14159)                 //设置标志位，值为准确度*180/pi，暂定为98%
-                        trans_fdb.roll = 1;
-                    else
-                        trans_fdb.roll = 0;
+                    trans_fdb.yaw =  -(*(int32_t *) &rpy_rx_data.DATA[1] / 1000.0);
+                    trans_fdb.pitch =(*(int32_t *) &rpy_rx_data.DATA[5] / 1000.0);
+                    trans_fdb.roll = (*(int32_t *) &rpy_rx_data.DATA[9] / 1000.0);
                 }
                 else{//绝对角度控制
-                    trans_fdb.yaw =  (*(int32_t *) &rpy_rx_data.DATA[1] / 1000.0);
-                    trans_fdb.pitch = -(*(int32_t *) &rpy_rx_data.DATA[5] / 1000.0);
-                    if(openfire >= 0.98*180/3.14159)                 //设置标志位，值为准确度*180/pi，暂定为98%
-                        trans_fdb.roll = 1;
-                    else
-                        trans_fdb.roll = 0;
+                    trans_fdb.yaw =  -(*(int32_t *) &rpy_rx_data.DATA[1] / 1000.0);
+                    trans_fdb.pitch = (*(int32_t *) &rpy_rx_data.DATA[5] / 1000.0);
+                    trans_fdb.roll = (*(int32_t *) &rpy_rx_data.DATA[9] / 1000.0);
+
                 }
             }break;
             case HEARTBEAT:{

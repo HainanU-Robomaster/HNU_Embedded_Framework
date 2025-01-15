@@ -334,6 +334,7 @@ static rt_int16_t motor_control_yaw(dji_motor_measure_t measure){
         /* 注意负号 */
         pid_out_angle = pid_calculate(pid_angle, get_angle, gim_motor_ref[YAW]);
         send_data = -pid_calculate(pid_speed, get_speed, pid_out_angle);      // 电机转动正方向与imu相反
+//        send_data=0;
     }
 
     return send_data;
@@ -392,6 +393,7 @@ static rt_int16_t motor_control_pitch(dji_motor_measure_t measure){
         /* 注意负号 */
         pid_out_angle = pid_calculate(pid_angle, get_angle, gim_motor_ref[PITCH]);
         send_data = pid_calculate(pid_speed, get_speed, pid_out_angle);      // 电机转动正方向与imu相反
+//        send_data = 0;
     }
 
     return send_data;
