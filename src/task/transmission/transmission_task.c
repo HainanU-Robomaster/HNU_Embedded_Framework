@@ -33,7 +33,8 @@ RpyTypeDef rpy_tx_data={
         .AC = 0,
 };
 RpyTypeDef rpy_rx_data; //接收解析结构体
-static rt_uint32_t heart_dt;
+ rt_uint32_t heart_dt;
+TeamColor  team_color;
 /* ---------------------------------usb虚拟串口数据相关 --------------------------------- */
 static rt_device_t vs_port = RT_NULL;
 /* -------------------------------- 线程间通讯话题相关 ------------------------------- */
@@ -132,13 +133,23 @@ void transmission_task_entry(void* argument)
 void Send_to_pc(RpyTypeDef data_r)
 {
     /*填充数据*/
-    pack_Rpy(&data_r, (gim_fdb.yaw_offset_angle - ins_data.yaw), (ins_data.pitch - gim_fdb.pit_offset_angle), ins_data.roll);
+    judge_color();
+    pack_Rpy(&data_r, (gim_fdb.yaw_offset_angle - ins_data.yaw), (ins_data.pitch - gim_fdb.pit_offset_angle), ins_data.roll,team_color);
     Check_Rpy(&data_r);
 
     rt_device_write(vs_port, 0, (uint8_t*)&data_r, sizeof(data_r));
 }
 
-void pack_Rpy(RpyTypeDef *frame, float yaw, float pitch,float roll)
+void judge_color()
+{
+    robot_status.robot_id = 3 ;   //以后在此处进行机器人id的赋值，即向上位机发送机器人颜色
+    if(robot_status.robot_id < 10)
+        team_color = RED;
+    else
+        team_color = BLUE;
+}
+
+void pack_Rpy(RpyTypeDef *frame, float yaw, float pitch,float openfire, int team_color)   //此处roll值作为开火标志位
 {
     int8_t rpy_tx_buffer[FRAME_RPY_LEN] = {0} ;
     int32_t rpy_data = 0;
@@ -155,13 +166,18 @@ void pack_Rpy(RpyTypeDef *frame, float yaw, float pitch,float roll)
     rpy_tx_buffer[6] = *gimbal_rpy >> 8;
     rpy_tx_buffer[7] = *gimbal_rpy >> 16;
     rpy_tx_buffer[8] = *gimbal_rpy >> 24;
-    rpy_data = roll *1000;
+    rpy_data = openfire *1000;
     rpy_tx_buffer[9] = *gimbal_rpy;
     rpy_tx_buffer[10] = *gimbal_rpy >> 8;
     rpy_tx_buffer[11] = *gimbal_rpy >> 16;
     rpy_tx_buffer[12] = *gimbal_rpy >> 24;
+    rpy_data = team_color *1000;
+    rpy_tx_buffer[13] = *gimbal_rpy;
+    rpy_tx_buffer[14] = *gimbal_rpy >> 8;
+    rpy_tx_buffer[15] = *gimbal_rpy >> 16;
+    rpy_tx_buffer[16] = *gimbal_rpy >> 24;
 
-    memcpy(&frame->DATA[0], rpy_tx_buffer,13);
+    memcpy(&frame->DATA[0], rpy_tx_buffer,17);
 
     frame->LEN = FRAME_RPY_LEN;
 }
@@ -205,22 +221,17 @@ static rt_err_t usb_input(rt_device_t dev, rt_size_t size)
     {
         memcpy(&rpy_rx_data,&frame_rx,sizeof(rpy_rx_data));
         switch (rpy_rx_data.ID) {
-            case CHASSIS_CTRL:{
-                trans_fdb.linear_x = (*(int32_t *) &rpy_rx_data.DATA[0] / 10000.0);
-                trans_fdb.linear_y = (*(int32_t *) &rpy_rx_data.DATA[4] / 10000.0);
-                trans_fdb.linear_z = (*(int32_t *) &rpy_rx_data.DATA[8] / 10000.0);
-                trans_fdb.angular_x = (*(int32_t *) &rpy_rx_data.DATA[12] / 10000.0);
-                trans_fdb.angular_y = (*(int32_t *) &rpy_rx_data.DATA[16] / 10000.0);
-                trans_fdb.angular_z = (*(int32_t *) &rpy_rx_data.DATA[20] / 10000.0);
-            }break;
+
             case GIMBAL:{
                 if (rpy_rx_data.DATA[0]) {//相对角度控制
                     trans_fdb.yaw = -(*(int32_t *) &rpy_rx_data.DATA[1] / 1000.0);
                     trans_fdb.pitch = (*(int32_t *) &rpy_rx_data.DATA[5] / 1000.0);
+                    trans_fdb.roll = (*(int32_t *) &rpy_rx_data.DATA[9] / 1000.0);
                 }
                 else{//绝对角度控制
                     trans_fdb.yaw = -(*(int32_t *) &rpy_rx_data.DATA[1] / 1000.0);
                     trans_fdb.pitch = (*(int32_t *) &rpy_rx_data.DATA[5] / 1000.0);
+                    trans_fdb.roll = (*(int32_t *) &rpy_rx_data.DATA[9] / 1000.0);
                 }
             }break;
             case HEARTBEAT:{

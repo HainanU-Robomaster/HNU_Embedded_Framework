@@ -323,6 +323,7 @@ typedef struct
     uint8_t mains_power_chassis_output : 1;         /*! 主控电源输出情况：chassis 口输出 */
     uint8_t mains_power_shooter_output : 1;         /*! 主控电源输出情况：shooter 口输出 */
 } __attribute__((__packed__)) robot_status_t;
+static robot_status_t robot_status;
 #endif //SETINGS_REFEREE_SYSTEM_H
 
 

@@ -51,6 +51,8 @@ static int key_q_status=-1;
 static int key_v_status=-1;
 /*用于清除环形缓冲区buffer的指针*/
 extern rt_uint8_t *r_buffer_point;
+/*机器人颜色*/
+extern robot_status_t robot_states;
 /* ------------------------------- 遥控数据转换为控制指令 ------------------------------ */
 static void remote_to_cmd_sbus(void);
 static void remote_to_cmd_dbus(void);
@@ -481,7 +483,7 @@ static void remote_to_cmd_pc_controler(void)
         shoot_cmd.friction_status=0;
     }
     /*TODO:------------------------------------------------------------扳机连发模式---------------------------------------------------------*/
-    if((rc_now->mouse.l==1||rc_now->wheel>=200)&&shoot_cmd.friction_status==1
+    if(((rc_now->mouse.l==1||rc_now->wheel>=200)&&trans_fdb.roll==1)&&shoot_cmd.friction_status==1
 //    &&(referee_fdb.power_heat_data.shooter_17mm_1_barrel_heat < (referee_fdb.robot_status.shooter_barrel_heat_limit-10))
     )
     {

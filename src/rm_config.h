@@ -109,18 +109,18 @@
 
 /******** DBUS底盘小陀螺相关设置 *******/
 /*旋转速度*/
-#define ROTATE_RATIO 5
+#define ROTATE_RATIO 2.6
 
 /* --------------------------------- 底盘PID参数 -------------------------------- */
 /* 电机速度环 */
-#define CHASSIS_KP_V_MOTOR              12
-#define CHASSIS_KI_V_MOTOR              22.6908896696549f
+#define CHASSIS_KP_V_MOTOR              5
+#define CHASSIS_KI_V_MOTOR              5.6908896696549f
 #define CHASSIS_KD_V_MOTOR              0
 #define CHASSIS_INTEGRAL_V_MOTOR        8000
 #define CHASSIS_MAX_V_MOTOR             16000
 // TODO: 参数待整定
 /* 跟随云台PID */
-#define CHASSIS_KP_V_FOLLOW             0.3205f
+#define CHASSIS_KP_V_FOLLOW             0.151f
 #define CHASSIS_KI_V_FOLLOW             0
 #define CHASSIS_KD_V_FOLLOW             0.0055639f
 #define CHASSIS_INTEGRAL_V_FOLLOW       0
@@ -159,11 +159,11 @@
 #define YAW_INTEGRAL_A_IMU       0
 #define YAW_MAX_A_IMU            25
 /* auto速度环 */
-#define YAW_KP_V_AUTO            10000
-#define YAW_KI_V_AUTO            0.1423
+#define YAW_KP_V_AUTO            26000
+#define YAW_KI_V_AUTO            15.5
 #define YAW_KD_V_AUTO            0
-#define YAW_INTEGRAL_V_AUTO      0
-#define YAW_MAX_V_AUTO           30000
+#define YAW_INTEGRAL_V_AUTO      1500
+#define YAW_MAX_V_AUTO           4000
 /* auto角度环 */
 #define YAW_KP_A_AUTO            0.124710033270487f
 #define YAW_KI_A_AUTO            0.158443192644351f
@@ -193,8 +193,8 @@
 #define PITCH_INTEGRAL_A_IMU     0.0f
 #define PITCH_MAX_A_IMU          20
 /* auto速度环 */
-#define PITCH_KP_V_AUTO          1350
-#define PITCH_KI_V_AUTO          0.00007153
+#define PITCH_KP_V_AUTO          5000
+#define PITCH_KI_V_AUTO          0.0007153
 #define PITCH_KD_V_AUTO          0
 #define PITCH_INTEGRAL_V_AUTO    1500
 #define PITCH_MAX_V_AUTO         20000
@@ -223,8 +223,8 @@
 #define SBUS_FRICTION_AUTO_SPEED_H 7000
 
 /** DBUS遥控器发射速度 **/
-#define DBUS_FRICTION_LAUNCH_SPEED 7000
-#define DBUS_SHOOT_REVERSE_SPEED 3000
+#define DBUS_FRICTION_LAUNCH_SPEED 8300
+#define DBUS_SHOOT_REVERSE_SPEED 4000
 /** COUNTINUE模式参数 **/
 #define DBUS_FRICTION_AUTO_SPEED_L 2500
 #define DBUS_FRICTION_AUTO_SPEED_H 4500
@@ -232,7 +232,7 @@
 // TODO: 速度期望应改为变量应对速度切换。初次参数调整已完成
 /* 右摩擦轮M3508电机PID参数 */
 /* 速度环 */
-#define RIGHT_KP_V             30
+#define RIGHT_KP_V             45
 #define RIGHT_KI_V             0.059f
 #define RIGHT_KD_V             0.0012f
 #define RIGHT_INTEGRAL_V       50
@@ -240,7 +240,7 @@
 
 /* 左摩擦轮M3508电机PID参数 */
 /* 速度环 */
-#define LEFT_KP_V           30
+#define LEFT_KP_V           45
 #define LEFT_KI_V           0.059f
 #define LEFT_KD_V           0.0012f
 #define LEFT_INTEGRAL_V     50

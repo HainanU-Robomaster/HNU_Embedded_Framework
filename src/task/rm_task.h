@@ -144,12 +144,7 @@ struct shoot_fdb_msg
  { // 云台自瞄角度控制
      float yaw;
      float pitch;
-     float linear_x;
-     float linear_y;
-     float linear_z;
-     float angular_x;
-     float angular_y;
-     float angular_z;
+     float roll;
      rt_uint8_t heartbeat;
  };
  /* ------------------------------ referee反馈状态数据 ------------------------------ */
