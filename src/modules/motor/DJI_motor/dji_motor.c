@@ -6,23 +6,24 @@
 #include "dji_motor.h"
 #include "rm_config.h"
 #include "usr_callback.h"
-
+#include "rm_task.h"
 #define DBG_TAG   "dji.motor"
 #define DBG_LVL DBG_INFO
-#include <drv_dwt.h>
 #include <rtdbg.h>
-
+float power__all=0;
 #define DJI_MOTOR_CNT 14             // 默认波特率下，实测挂载电机极限数量
-
 /* 滤波系数设置为1的时候即关闭滤波 */
 #define SPEED_SMOOTH_COEF 0.85f      // 最好大于0.85
 #define CURRENT_SMOOTH_COEF 0.9f     // 必须大于0.9
 #define ECD_ANGLE_COEF_DJI 0.043945f // (360/8192),将编码器值转化为角度制
-
+#define  constant 0.675f//2650
+#define k_rpm 1.453e-07//0.001651
+#define k_current 1.23e-07//0.000000001721
+#define k_Torque 1.997e-06f
 static uint8_t idx = 0; // register idx,是该文件的全局电机索引,在注册时使用
 /* DJI电机的实例,此处仅保存指针,内存的分配将通过电机实例初始化时通过malloc()进行 */
 static dji_motor_object_t *dji_motor_obj[DJI_MOTOR_CNT] = {NULL};
-
+ static struct referee_fdb_msg referee_fdb;
 static rt_device_t chassis_can, gimbal_can;
 
 // TODO: 0x2ff容易发送失败
@@ -32,8 +33,8 @@ static rt_device_t chassis_can, gimbal_can;
  *        该变量将在 dji_motor_control() 中使用,分组在 motor_send_grouping()中进行
  *
  * C610(m2006)/C620(m3508):0x1ff,0x200;
- * GM6020/GM66623:0x1ff,0x2ff
- * 反馈(rx_id): GM6020: 0x204+id ; C610/C620: 0x200+id;GM6623:0x205+id(yaw id=0x205)
+ * GM6020:0x1ff,0x2ff
+ * 反馈(rx_id): GM6020: 0x204+id ; C610/C620: 0x200+id
  * can1: [0]:0x1FF,[1]:0x200,[2]:0x2FF
  * can2: [3]:0x1FF,[4]:0x200,[5]:0x2FF
  */
@@ -125,31 +126,6 @@ static uint8_t sender_enable_flag[6] = {0};
              }
          }
          break;
-     case GM6623:
-        motor_id = motor->rx_id - 0x205;//yawID started with 0
-         if(motor_id <= 3)
-         {
-             motor_send_num = motor_id;
-             motor_group = rt_strcmp(config->can_name,can_chassis) ? 3 : 0;
-         }else {
-             motor_send_num = motor_id - 4;
-             motor_group = rt_strcmp(config ->can_name,can_chassis) ? 5 : 2;
-         }
-
-         sender_enable_flag[motor_group] = 1;
-         motor->message_num = motor_send_num;
-         motor->send_group = motor_group;
-
-         for (size_t i = 0; i < idx; ++i)
-         {
-             if (!rt_strcmp(dji_motor_obj[i]->can_dev->parent.name, config->can_name) && dji_motor_obj[i]->rx_id == config->rx_id)
-             {
-                 LOG_E("ID crash. Check in debug mode, add dji_motor_obj to watch to get more information.");
-                 while (1)
-                     LOG_E("id [%d], can_bus [%s]", config->rx_id, config->can_name);
-             }
-         }
-         break;
 
      default: // other motors should not be registered here
          while (1)
@@ -164,67 +140,28 @@ static uint8_t sender_enable_flag[6] = {0};
  */
 static void decode_dji_motor(dji_motor_object_t *motor, uint8_t *data)
 {
-     uint8_t *rxbuff = data;
-     dji_motor_measure_t *measure = &motor->measure; // measure要多次使用,保存指针减小访存开销
-    switch(motor->motor_type) {
-        case M2006:
-        case M3508:
-        case GM6020:
-             rt_timer_start(motor->timer);  // 判定电机未离线，重置电机定时器
-             // 解析数据并对电流和速度进行滤波,电机的反馈报文具体格式见电机说明手册
-             measure->last_ecd = measure->ecd;
-             measure->ecd = ((uint16_t)rxbuff[0]) << 8 | rxbuff[1];
-             measure->angle_single_round = ECD_ANGLE_COEF_DJI * (float)measure->ecd;
-             measure->speed_rpm = (1.0f - SPEED_SMOOTH_COEF) * measure->speed_rpm + SPEED_SMOOTH_COEF * (float)((int16_t)(rxbuff[2] << 8 | rxbuff[3]));
-             measure->speed_aps = (1.0f - SPEED_SMOOTH_COEF) * measure->speed_aps +
-                                  RPM_2_ANGLE_PER_SEC * SPEED_SMOOTH_COEF * (float)((int16_t)(rxbuff[2] << 8 | rxbuff[3]));
-             measure->real_current = (1.0f - CURRENT_SMOOTH_COEF) * measure->real_current +
-                                     CURRENT_SMOOTH_COEF * (float)((int16_t)(rxbuff[4] << 8 | rxbuff[5]));
-             measure->temperature = rxbuff[6];
+    uint8_t *rxbuff = data;
+    dji_motor_measure_t *measure = &motor->measure; // measure要多次使用,保存指针减小访存开销
 
-             // 多圈角度计算,前提是假设两次采样间电机转过的角度小于180°,自己画个图就清楚计算过程了
-             if (measure->ecd - measure->last_ecd > 4096)
-                 measure->total_round--;
-             else if (measure->ecd - measure->last_ecd < -4096)
-                 measure->total_round++;
-             measure->total_angle = measure->total_round * 360 + measure->angle_single_round;
-             break;
+    rt_timer_start(motor->timer);  // 判定电机未离线，重置电机定时器
 
-         case GM6623:
-             rt_timer_start(motor->timer);
-            static float current_time;
-            static float last_time;
-            static int16_t delta_ecd;
-            float delta_time;
-            last_time = current_time;
-            current_time = dwt_get_time_ms();
+    // 解析数据并对电流和速度进行滤波,电机的反馈报文具体格式见电机说明手册
+    measure->last_ecd = measure->ecd;
+    measure->ecd = ((uint16_t)rxbuff[0]) << 8 | rxbuff[1];
+    measure->angle_single_round = ECD_ANGLE_COEF_DJI * (float)measure->ecd;
+    measure->speed_rpm = (1.0f - SPEED_SMOOTH_COEF) * measure->speed_rpm + SPEED_SMOOTH_COEF * (float)((int16_t)(rxbuff[2] << 8 | rxbuff[3]));
+    measure->speed_aps = (1.0f - SPEED_SMOOTH_COEF) * measure->speed_aps +
+                         RPM_2_ANGLE_PER_SEC * SPEED_SMOOTH_COEF * (float)((int16_t)(rxbuff[2] << 8 | rxbuff[3]));
+    measure->real_current = (1.0f - CURRENT_SMOOTH_COEF) * measure->real_current +
+                            CURRENT_SMOOTH_COEF * (float)((int16_t)(rxbuff[4] << 8 | rxbuff[5]));
+    measure->temperature = rxbuff[6];
 
-            measure->last_ecd = measure->ecd;
-            measure->ecd = ((uint16_t)rxbuff[0]) << 8 | rxbuff[1];//机械角度
-            delta_ecd = measure->ecd - measure->last_ecd;
-            if (delta_ecd < -4096) { // 正向跨越
-                delta_ecd += 8192;
-                measure->total_round++;
-            } else if (delta_ecd > 4096) { // 反向跨越
-                delta_ecd -= 8192;
-                measure->total_round--;
-            }
-            measure->angle_single_round = ECD_ANGLE_COEF_DJI * (float)measure->ecd;//当前角度
-            measure->real_current = (1.0f - CURRENT_SMOOTH_COEF) * measure->real_current +
-                                     CURRENT_SMOOTH_COEF * (float)((int16_t)(rxbuff[2] << 8 | rxbuff[3]));
-            //6623没有测量角速度，只能通过编码器值计算一个
-            delta_time = (current_time-last_time)*0.001f;//ms->s
-            if(delta_time > 0) {
-                if((delta_ecd <= 3 && delta_ecd >= 0) || delta_ecd < 0 && delta_ecd >=-3) {
-                    measure->speed_aps = 0;
-                }else {
-                    measure->speed_aps = decode_6623_aps(delta_ecd * ECD_ANGLE_COEF_DJI / delta_time);//这个循环数组的本意是剔除相差太大的噪声，但是效果不佳，当前的作用仅为加权
-                }
-                measure->speed_rpm = (1.0f - SPEED_SMOOTH_COEF) * measure->speed_rpm + SPEED_SMOOTH_COEF * (int16_t) (measure->speed_aps )/RPM_2_ANGLE_PER_SEC;//圈/分
-            }
-            measure->total_angle = measure->total_round * 360 + measure->angle_single_round;
-            break;
-     }
+    // 多圈角度计算,前提是假设两次采样间电机转过的角度小于180°,自己画个图就清楚计算过程了
+    if (measure->ecd - measure->last_ecd > 4096)
+        measure->total_round--;
+    else if (measure->ecd - measure->last_ecd < -4096)
+        measure->total_round++;
+    measure->total_angle = measure->total_round * 360 + measure->angle_single_round;
 }
 
 /**
@@ -269,32 +206,175 @@ void dji_motor_enable(dji_motor_object_t *motor)
 // 运算所有电机实例的控制器,发送控制报文
 void dji_motor_control()
 {
-    dji_motor_object_t *motor;
-    dji_motor_measure_t measure;
-    uint8_t group, num; // 电机组号和组内编号
-    int16_t set = 0; // 电机控制器计算得到的输出值
-    uint8_t size = 0;
+#ifdef BSP_USING_DEFAULT_MODE
+     dji_motor_object_t *motor;
+     dji_motor_measure_t measure;
+     uint8_t group, num; // 电机组号和组内编号
+     int16_t set = 0; // 电机控制器计算得到的输出值
+     uint8_t size = 0;
 
-    // 遍历所有电机实例,运行控制算法并填入报文
-    for (size_t i = 0; i < idx; ++i)
-    {
-        motor = dji_motor_obj[i];
-        measure = motor->measure;
+     // 遍历所有电机实例,运行控制算法并填入报文
+     for (size_t i = 0; i < idx; ++i)
+     {
+         motor = dji_motor_obj[i];
+         measure = motor->measure;
 
          set = motor->control(measure); // 调用对接的电机控制器计算
-        // set=100;
-        // 分组填入发送数据
-        group = motor->send_group;
-        num = motor->message_num;
-        send_msg[group].data[2 * num] = (uint8_t)(set >> 8);
-        send_msg[group].data[2 * num + 1] = (uint8_t)(set & 0x00ff);
 
-        // 若该电机处于停止状态,直接将buff置零
-        if (motor->stop_flag == MOTOR_STOP)
-            rt_memset(send_msg[group].data + 2 * num, 0, 2 * sizeof(rt_uint8_t));
-    }
+         // 分组填入发送数据
+         group = motor->send_group;
+         num = motor->message_num;
+         send_msg[group].data[2 * num] = (uint8_t)(set >> 8);
+         send_msg[group].data[2 * num + 1] = (uint8_t)(set & 0x00ff);
 
-    // 遍历flag,检查是否要发送这一帧报文
+         // 若该电机处于停止状态,直接将buff置零
+         if (motor->stop_flag == MOTOR_STOP)
+             rt_memset(send_msg[group].data + 2 * num, 0, 2 * sizeof(rt_uint8_t));
+     }
+
+     // 遍历flag,检查是否要发送这一帧报文
+     for (size_t i = 0; i < 6; ++i)
+     {
+         if (sender_enable_flag[i])
+         {
+             if(i < 3){
+                 size = rt_device_write(chassis_can, 0, &send_msg[i], sizeof(send_msg[i]));
+             }
+             else{
+                 size = rt_device_write(gimbal_can, 0, &send_msg[i], sizeof(send_msg[i]));
+             }
+             if (size == 0)
+             {
+                 LOG_W("can dev write data failed!");
+             }
+         }
+     }
+#endif
+#ifdef BSP_USING_POWER_LIMIT
+         dji_motor_object_t *motor;
+         dji_motor_measure_t measure;
+         uint8_t group, num; // 电机组号和组内编号
+         int16_t set = 0; // 电机控制器计算得到的输出值
+         uint8_t size = 0;
+         int16_t set1[4],rpm[4];
+         float power[4]={0},k_zoom = 0,power_all = 0;
+         uint8_t group1[4]={0},num1[4]={0};
+          // 遍历所有电机实例,运行控制算法并填入报文
+     for (size_t i = 0; i < idx; ++i)
+         {
+         motor = dji_motor_obj[i];
+         measure = motor->measure;
+         //当电机为底盘电机，即挂载在can1总线且为3508电机，使用底盘功率限制，其余正常填入报文
+             if ((motor->motor_type==M3508)&&(motor->can_dev->parent.name[3]==49))
+             {
+            switch (motor->rx_id) {
+                case 0x201:
+                    {
+                    set1[0] = motor->control(measure);
+                    rpm[0] = measure.speed_rpm;
+                    group1[0] = motor->send_group;
+                    num1[0] = motor->message_num;
+                    power[0] = k_rpm * motor->measure.speed_rpm * motor->measure.speed_rpm +
+                            k_current * set1[0] * set1[0] +
+                            motor->measure.speed_rpm * set1[0] * k_Torque + constant;
+                    break;
+                    }
+                case 0x202:
+                    {
+                    set1[1] = motor->control(measure);;
+                    rpm[1] = measure.speed_rpm;
+                    group1[1] = motor->send_group;
+                    num1[1] = motor->message_num;
+                    power[1] = k_rpm * motor->measure.speed_rpm * motor->measure.speed_rpm +
+                               k_current * set1[1] * set1[1] +
+                               motor->measure.speed_rpm * set1[1] * k_Torque + constant;
+                    break;
+                    }
+                case 0x203:
+                    {
+                    set1[2] = motor->control(measure);;
+                    rpm[2] = measure.speed_rpm;
+                    group1[2] = motor->send_group;
+                    num1[2] = motor->message_num;
+                    power[2] = k_rpm * motor->measure.speed_rpm * motor->measure.speed_rpm +
+                               k_current * set1[2] * set1[2] +
+                               motor->measure.speed_rpm * set1[2] * k_Torque + constant;
+                    break;
+                    }
+                case 0x204:
+                {
+                    rpm[3] = measure.speed_rpm;
+                    set1[3] = motor->control(measure);;
+                    group1[3] = motor->send_group;
+                    num1[3] = motor->message_num;
+                    power[3] = k_rpm * motor->measure.speed_rpm * motor->measure.speed_rpm +
+                               k_current * set1[3] * set1[3] +
+                               motor->measure.speed_rpm * set1[3] * k_Torque + constant;
+                    // 计算全局功率限制系数
+                    for (int j = 0; j < 4; ++j)
+                    {
+
+                        if(power[j]>0) {
+                            power_all += power[j];
+                        }
+                    }
+                    power__all=power_all; //用于观察与裁判系统读取功率的拟合效果
+                    int powerlimit = 60;
+                    int power_limit = referee_fdb.robot_status.chassis_power_limit;
+                    if (power_limit >=50 && power_limit <=120){
+                        powerlimit = 60;
+                    }
+                    //底盘功率限制单位转换
+                    if (power_all>powerlimit) {
+                        k_zoom = powerlimit / power_all;
+                        for (int j = 0; j < 4; ++j)
+                        {
+                            power[j] = k_zoom * power[j] - k_rpm * rpm[j] * rpm[j] - constant;
+                            if (set1[j] >= 0) {
+                                set1[j] = 0.6*(-k_Torque * rpm[j] +sqrt(k_Torque * rpm[j] * k_Torque * rpm[j] + 4 * power[j] * k_current)) /(2 * k_current);
+                                if (set1[j]>6000){
+                                    set1[j]=6000;
+                                }
+                            } else {
+                                set1[j] = 0.6*(-k_Torque * rpm[j] -sqrt(k_Torque * rpm[j] * k_Torque * rpm[j] + 4 * power[j] * k_current)) /(2 * k_current);
+                                if (set1[j]<-6000){
+                                    set1[j]=-6000;
+                                }
+                            }
+                        }
+                        power_all = 0;
+                    } else
+                    {
+                        power_all = 0;
+                    }
+                    for (int j = 0; j < 4; ++j)
+                    {
+                        send_msg[group1[j]].data[2 * num1[j]] = (uint8_t) (set1[j] >> 8);
+                        send_msg[group1[j]].data[2 * num1[j] + 1] = (uint8_t) (set1[j] & 0x00ff);
+                    }
+                    if (motor->stop_flag == MOTOR_STOP)
+                    {
+                        for (int j = 0; j < 4; ++j)
+                    {
+                            rt_memset(send_msg[group1[j]].data + 2 * num1[j], 0, 2 * sizeof(rt_uint8_t));
+                    }
+                }
+             }
+             }
+             }else{
+                 set = motor->control(measure); // 调用对接的电机控制器计算
+             // 分组填入发送数据
+             group = motor->send_group;
+             num = motor->message_num;
+             send_msg[group].data[2 * num] = (uint8_t) (set >> 8);
+             send_msg[group].data[2 * num + 1] = (uint8_t) (set & 0x00ff);
+
+             // 若该电机处于停止状态,直接将buff置零
+             if (motor->stop_flag == MOTOR_STOP)
+                 rt_memset(send_msg[group].data + 2 * num, 0, 2 * sizeof(rt_uint8_t));
+         }
+     }
+       // 遍历flag,检查是否要发送这一帧报文
     for (size_t i = 0; i < 6; ++i)
     {
         if (sender_enable_flag[i])
@@ -311,6 +391,7 @@ void dji_motor_control()
             }
         }
     }
+#endif
 }
 
 /**
@@ -324,7 +405,7 @@ dji_motor_object_t *dji_motor_register(motor_config_t *config, void *control)
     rt_memset(object, 0, sizeof(dji_motor_object_t));
 
     // 对接用户配置的 motor_config
-    object->motor_type = config->motor_type;                         // 6020 or 2006 or 3508 or 6623
+    object->motor_type = config->motor_type;                         // 6020 or 2006 or 3508
     object->rx_id = config->rx_id;                                   // 电机接收报文的ID
     object->control = control;                                       // 电机控制器执行
 
@@ -347,16 +428,3 @@ dji_motor_object_t *dji_motor_register(motor_config_t *config, void *control)
     dji_motor_obj[idx++] = object;
     return object;
 }
-float decode_6623_aps(float inputs) {
-     static float num[3];
-     static int index = 0;
-     static float avrg;
-     index %= 3;
-         // if(abs(inputs-avrg)<5000){//给小了没有，给大了没用。。
-             num[index]=inputs;
-             for(int i=0;i<3;i++){
-                 avrg += num[i];
-             }
-             avrg/=3;
-             return num[index++];
- }

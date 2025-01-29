@@ -270,6 +270,24 @@ menu "On-chip Peripheral Drivers"
                 default 41
         endif
 
+    menuconfig BSP_USING_I2C2
+        bool "Enable I2C2 BUS (software simulation)"
+        default n
+        select RT_USING_I2C
+        select RT_USING_I2C_BITOPS
+        select RT_USING_PIN
+        if BSP_USING_I2C2
+            comment "Notice: PB12 --> 28; PB13 --> 29"
+                config BSP_I2C2_SCL_PIN
+                    int "i2c2 scl pin number"
+                    default 29
+                config BSP_I2C2_SDA_PIN
+                    int "I2C2 sda pin number"
+                    default 28
+        endif
+
+
+
     menuconfig BSP_USING_USBD
 		bool "Enable USB"
 		default y
@@ -300,6 +318,10 @@ menu "RoboMaster Modules"
         bool "Enable DWT"
         default y
 
+    config BSP_USING_INA226
+         bool "Enable INA226"
+         default n
+
     config BSP_USING_PS_MSG
         bool "Enable Pub Sub Message"
         default y
@@ -326,7 +348,7 @@ menu "RoboMaster Modules"
                     default n
                 endif
         endif
-    
+
     config BSP_USING_RC_SBUS
         bool "Enable RC SBUS"
         default n
@@ -371,11 +393,27 @@ menu "RoboMaster Algorithms"
        bool "Select USING Ramp"
        default y
 
+    menuconfig BSP_USING_CHASSIS_POWER_MODE
+        bool "Select USING CHASSIS_POWER_MODE"
+        default y
+        if BSP_USING_CHASSIS_POWER_MODE
+            config BSP_USING_POWER_LIMIT
+                bool "Select POWER_LIMIT"
+                default y
+            config BSP_USING_DEFAULT_MODE
+                bool "Select DEFAULT MODE "
+                default n
+        endif
+
 endmenu
 
 menu "RoboMaster Tasks"
     config BSP_USING_EXAMPLE_TASK
         bool "Select USING Example Task"
+        default n
+
+    config BSP_USING_INA226_TASK
+        bool "Select USING INA226 Task"
         default n
 
     config BSP_USING_INS_TASK
@@ -401,7 +439,7 @@ menu "RoboMaster Tasks"
                 bool "Select Chassis Mecanum Mode"
                 default n
         endif
-    
+
     config BSP_USING_GIMBAL_TASK
         bool "Select USING Gimbal Task"
         default y
@@ -432,7 +470,6 @@ menu "RoboMaster Robot Types"
         select BSP_USING_INS_TASK
         select BSP_USING_MOTOR_TASK
         select BSP_USING_CMD_TASK
-
 endmenu
 
 menu "Board extended module Drivers"

@@ -525,14 +525,14 @@ static void remote_to_cmd_pc_DT7(void)
     {
         key_v_status=-key_v_status;
     }
-    if (trans_fdb.roll == 1 && gim_cmd.ctrl_mode == GIMBAL_AUTO)
-    {
-        shoot_cmd.ctrl_mode=SHOOT_COUNTINUE;
-    }
-    if (trans_fdb.roll == 0 && gim_cmd.ctrl_mode == GIMBAL_AUTO)
-    {
-        shoot_cmd.ctrl_mode=SHOOT_STOP;
-    }
+//    if (trans_fdb.roll == 1 && gim_cmd.ctrl_mode == GIMBAL_AUTO)
+//    {
+//        shoot_cmd.ctrl_mode=SHOOT_COUNTINUE;
+//    }
+//    if (trans_fdb.roll == 0 && gim_cmd.ctrl_mode == GIMBAL_AUTO)
+//    {
+//        shoot_cmd.ctrl_mode=SHOOT_STOP;
+//    }
     if (key_v_status==-1)
     {
         shoot_cmd.ctrl_mode=SHOOT_COUNTINUE;

@@ -292,7 +292,7 @@ typedef struct
 */
 typedef struct
 {
-    uint8_t robot_id;                               /*! 本机器人 ID */
+    uint8_t robot_id ;                               /*! 本机器人 ID */
     uint8_t robot_level;                            /*! 机器人等级 */
     uint16_t current_HP;                             /*! 机器人剩余血量 */
     uint16_t maximum_HP;                                /*! 机器人上限血量 */

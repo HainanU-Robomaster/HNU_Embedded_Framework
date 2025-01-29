@@ -149,6 +149,7 @@ void Send_to_pc(RpyTypeDef data_r)
 
 void judge_color()
 {
+    robot_status.robot_id = 103 ;   //以后在此处进行机器人id的赋值，即确定机器人颜色和种类
     if(robot_status.robot_id < 10)
         team_color = RED;
     else

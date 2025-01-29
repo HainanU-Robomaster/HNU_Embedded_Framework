@@ -37,6 +37,9 @@ rt_thread_t ins_thread_handle;
 #ifdef BSP_USING_REFEREE_TASK
  rt_thread_t referee_thread_handle;
 #endif /* BSP_USING_SHOOT_TASK */
+#ifdef BSP_USING_INA226_TASK
+ rt_thread_t ina226_thread_handle;
+#endif /* BSP_USING_INA226_TASK */
 /**
  * @brief 初始化机器人任务,所有持续运行的任务都在这里初始化
  *
@@ -133,6 +136,17 @@ int robot_task_init(void)
          rt_thread_startup(referee_thread_handle);
 #endif /* BSP_USING_REFEREE_TASK*/
 
+#ifdef BSP_USING_INA226_TASK
+     /* 创建线程，名称是  shoot ，入口是  referee_task_entry */
+     ina226_thread_handle = rt_thread_create("ina226",
+                                              ina226_thread_entry, RT_NULL,
+                                              1024,16, 10);
+     /* 如果获得线程控制块，启动这个线程 */
+
+
+     if ( ina226_thread_handle != RT_NULL)
+        rt_thread_startup(ina226_thread_handle);
+#endif /* BSP_USING_INA226_TASK*/
      return RT_EOK;
 }
 INIT_APP_EXPORT(robot_task_init);
