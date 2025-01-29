@@ -184,6 +184,7 @@ void gimbal_thread_entry(void *argument)
                 }
                 gim_motor_ref[YAW] =gim_cmd.yaw;
                 gim_motor_ref[PITCH] =gim_cmd.pitch;
+//                gim_motor_ref[PITCH] = 3.2503;//目前由于弹道散布严重,自瞄写死pitch角度
                 // 底盘相对于云台归中值的角度，取负
                 gim_fdb.yaw_relative_angle = -yaw_motor_relive;
                 break;
@@ -334,6 +335,7 @@ static rt_int16_t motor_control_yaw(dji_motor_measure_t measure){
         /* 注意负号 */
         pid_out_angle = pid_calculate(pid_angle, get_angle, gim_motor_ref[YAW]);
         send_data = -pid_calculate(pid_speed, get_speed, pid_out_angle);      // 电机转动正方向与imu相反
+//        send_data=0;
     }
 
     return send_data;
@@ -392,6 +394,7 @@ static rt_int16_t motor_control_pitch(dji_motor_measure_t measure){
         /* 注意负号 */
         pid_out_angle = pid_calculate(pid_angle, get_angle, gim_motor_ref[PITCH]);
         send_data = pid_calculate(pid_speed, get_speed, pid_out_angle);      // 电机转动正方向与imu相反
+//        send_data = 0;
     }
 
     return send_data;
